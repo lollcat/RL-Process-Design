@@ -31,6 +31,8 @@ class Agent(object):
         input = Input(shape=self.env.observation_space.shape, name = "Input")
         delta = Input(shape = [1]) #related to calculation of loss function
         
+        
+        
         dense1 = Dense(self.layer_size, activation = 'relu', name = "fc1")(input)
         dense2 = Dense(self.layer_size, activation = 'relu', name = "fc2")(dense1)
         dense3 = Dense(self.layer_size, activation = 'relu', name = "fc3")(dense2)
@@ -89,7 +91,7 @@ class Agent(object):
         Noise_sd = max(max_noise - current_step/stop_step * (max_noise - min_noise), min_noise) 
         
         Noise = np.random.normal(policy_continuous_predict, Noise_sd)
-        action_continuous = policy_continuous_predict + Noise
+        action_continuous = min(self.env.continuous_action_space.high.reshape(policy_continuous_predict.shape), policy_continuous_predict + Noise)
         random = np.random.rand()
         if random > explore_threshold:
             action_discrete = np.random.choice(self.env.discrete_action_space.n)    

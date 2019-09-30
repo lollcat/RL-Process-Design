@@ -26,7 +26,7 @@ class simulator(Env):
         
         #spaces for mixed action space?
         self.discrete_action_space = spaces.Discrete(discrete_action_size)
-        self.continuous_action_space = spaces.Box(low = 0.5, high = 1, shape = (continuous_action_number,))
+        self.continuous_action_space = spaces.Box(low = 0.5, high = 0.999, shape = (continuous_action_number,))
         self.observation_space = spaces.Box(low = 0, high = 9.1, shape = self.initial_state.shape)
         
         self.total_cost = 0
@@ -34,7 +34,7 @@ class simulator(Env):
         self.outlet_streams = []
         self.sep_order = []
         self.current_stream = 0
-        self.silly_counter = 0
+        self.steps = 0
         
         empty = np.zeros(self.initial_state.shape)
         def maker(empty, initial_state, i): 
@@ -43,9 +43,12 @@ class simulator(Env):
             return stream
         self.product_streams = [maker(empty, self.initial_state, i) for i in range(self.initial_state.size)]
         
-    def step(self, action):
+    def step(self, action, same_action_punish = True): #note that same_action_punish should get removed as it is a hard coded heuristic
+        reward = 0
         action_discrete, action_continuous = action
         done = False
+        self.steps += 1
+        if self.steps > 20: done = True
         previous_state = self.state.copy()       
         Light_Key = action_discrete
         Heavy_Key = Light_Key + 1
@@ -63,9 +66,6 @@ class simulator(Env):
         #print(LK_B)
         if LK_D in [1,0] or LK_B in [1,0] or math.isnan(LK_D) or math.isnan(LK_B): #invalid action (HK LK split doesnt exist)
             reward = -1000 #big punishment, and state etc remain the same
-            self.silly_counter +=1
-            if self.silly_counter >= 10:
-                done = True
         else:                #valid action  
             self.sep_order.append(Light_Key)
             if len(self.sep_order) > self.max_columns: done = True
@@ -73,25 +73,28 @@ class simulator(Env):
             self.stream_table.append(bots)
             N =  np.log(LK_D/(1-LK_D) * (1-LK_B)/LK_B)/np.log(self.relative_volatility[Light_Key])
             Cost = N*1
-            if Cost < 0 or math.isnan(Cost): Cost = 1000   #check how it's possible that cost can be negative?
+            if Cost < 0 or math.isnan(Cost): Cost = 100   #check how it's possible that cost can be negative?
             self.total_cost += N
-            reward = -Cost
+            reward += -Cost
+
             if len(self.sep_order) > 1:
-                if Light_Key != self.sep_order[-2]: #action can't be a repeat to get reward
+                if Light_Key == self.sep_order[-2] and same_action_punish: #repeating actions is bad
+                    reward = -50
+                if Light_Key != self.sep_order[-2]: #action can't be a repeat to get reward for making a product stream
                     #if tops or bottoms are product stream reward +=100
-                    if min(np.sum(abs(self.product_streams - tops), axis=0)) < 0.2:
-                        reward += 100
-                    if min(np.sum(abs(self.product_streams - bots), axis=0)) < 0.2:
-                        reward +=100
+                    if min(np.sum(abs(self.product_streams - tops), axis=0)) < 0.1:
+                        reward += 50
+                    if min(np.sum(abs(self.product_streams - bots), axis=0)) < 0.1:
+                        reward += 50
                     
-            """Go to next stream as state, if stream only contains 1 compound then go to next stream"""
+            """Go to next stream as state, if stream only contains more than 95%wt of a single compound then go to next stream"""
             self.current_stream +=1
             self.state = self.stream_table[self.current_stream]
-            while sum(np.divide(self.state,self.initial_state)) < 1.5: 
+            while max(np.divide(self.state,self.state.sum())) > 0.95: 
                 self.outlet_streams.append(self.state)
+                reward += self.state.sum()**2*max(np.divide(self.state,self.state.sum()))**2 #reward proportional to stream flow and purity
                 if  np.array_equal(self.state,self.stream_table[-1]):
                     done = True
-                    reward = 100 # reward for finishing
                     break 
                 self.current_stream +=1
                 self.state = self.stream_table[self.current_stream]
@@ -103,7 +106,7 @@ class simulator(Env):
         self.current_stream = 0
         self.sep_order = []
         self.total_cost = 0
-        self.silly_counter = 0
+        self.steps = 0
         return self.state
     
     def render(self, mode = 'human'):
