@@ -11,19 +11,20 @@ import math
 
 """Actions: choose LK and LK split""" 
 """HK split has to be less than LK split - how to add constraint?"""
-"""In general, without just using a big punishment, how does one limit a NN to make choices that make sense with prior knowledge"""
+"""In general, without just using a big punishment, 
+how does one limit a NN to make choices that make sense with prior knowledge"""
 
     
-class simulator(Env):
+class Simulator(Env):
     def __init__(self):
         self.compound_names = ["Ethane", "Propylene", "Propane", "1-butene", "n-butane", "n-pentane"]
         self.initial_state = np.array([9.1, 6.8, 9.1, 6.8, 6.8, 6.8])
         self.relative_volatility = np.array([3.5, 1.2, 2.7, 1.21, 3.0]) #A/B, B/C etc
-        discrete_action_size = self.initial_state.shape[0] - 1 #action selects LK
+        discrete_action_size = self.initial_state.shape[0] - 1  #action selects LK
         continuous_action_number = 1 
         self.state = self.initial_state.copy()
         self.max_columns = 10
-        
+
         #spaces for mixed action space?
         self.discrete_action_space = spaces.Discrete(discrete_action_size)
         self.continuous_action_space = spaces.Box(low = 0.5, high = 0.999, shape = (continuous_action_number,))
@@ -65,21 +66,21 @@ class simulator(Env):
         #Gets error for LK_B sometimes if choice doesn't make sense - resolved below
         #print(LK_B)
         if LK_D in [1,0] or LK_B in [1,0] or math.isnan(LK_D) or math.isnan(LK_B): #invalid action (HK LK split doesnt exist)
-            reward = -1000 #big punishment, and state etc remain the same
+            reward = -100 #big punishment, and state etc remain the same
         else:                #valid action  
             self.sep_order.append(Light_Key)
             if len(self.sep_order) > self.max_columns: done = True
             self.stream_table.append(tops)
             self.stream_table.append(bots)
             N =  np.log(LK_D/(1-LK_D) * (1-LK_B)/LK_B)/np.log(self.relative_volatility[Light_Key])
-            Cost = N*1
-            if Cost < 0 or math.isnan(Cost): Cost = 100   #check how it's possible that cost can be negative?
+            Cost = abs(N)
+            if math.isnan(Cost): Cost = 100   #check how it's possible that cost can be negative?
             self.total_cost += N
             reward += -Cost
 
             if len(self.sep_order) > 1:
                 if Light_Key == self.sep_order[-2] and same_action_punish: #repeating actions is bad
-                    reward = -50
+                    reward = -100
                 if Light_Key != self.sep_order[-2]: #action can't be a repeat to get reward for making a product stream
                     #if tops or bottoms are product stream reward +=100
                     if min(np.sum(abs(self.product_streams - tops), axis=0)) < 0.1:

@@ -80,7 +80,7 @@ class Agent(object):
         return action_discrete, action_continuous
     
     
-    def choose_action_epsgreedy(self, observation, current_step, stop_step, max_prob = 0.95, min_prob = 0.05, max_noise = 0.95, min_noise = 0.01):
+    def choose_action_epsgreedy(self, observation, current_step, stop_step, max_prob = 0.95, min_prob = 0.05, max_noise = 0.8, min_noise = 0.01):
         
         
         state = observation[np.newaxis, :]
@@ -90,8 +90,8 @@ class Agent(object):
         explore_threshold = max(max_prob - current_step/stop_step * (max_prob - min_prob), min_prob)
         Noise_sd = max(max_noise - current_step/stop_step * (max_noise - min_noise), min_noise) 
         
-        Noise = np.random.normal(policy_continuous_predict, Noise_sd)
-        action_continuous = min(self.env.continuous_action_space.high.reshape(policy_continuous_predict.shape), policy_continuous_predict + Noise)
+        Noisey_continuous = np.random.normal(policy_continuous_predict, Noise_sd)
+        action_continuous = min(self.env.continuous_action_space.high.reshape(policy_continuous_predict.shape), Noisey_continuous)
         random = np.random.rand()
         if random > explore_threshold:
             action_discrete = np.random.choice(self.env.discrete_action_space.n)    
@@ -103,28 +103,35 @@ class Agent(object):
         return action_discrete, action_continuous
         
     
-    def learn(self, state, action, reward, next_state, done):
-        state = state[np.newaxis, :]
-        next_state = next_state[np.newaxis, :]
+    def learn(self, state, action, reward, next_state, done, batch_size, verbose = 0):
+        state = state
+        next_state = next_state #
         
-        action_discrete, action_continuous = action
+        
+        
+        action_discrete = action[:, 0].astype('int')
+        action_continuous  = action[:, 1].reshape((batch_size, 1))
         
     
-        critic_value = self.critic.predict(state)
-        critic_value_next = self.critic.predict(next_state)
+        critic_value = self.critic.predict(state).reshape((batch_size, 1)) #
+        critic_value_next = self.critic.predict(next_state).reshape((batch_size, 1))
         
         if done == False:
-            target = reward + self.gamma*critic_value_next
+            target = reward.reshape((batch_size, 1)) + self.gamma*critic_value_next
         if done == True:
-            target = np.array(reward).reshape((1,1))
+            target = np.array(reward)
+            
+        if target.shape != (batch_size, 1): target = target.reshape((batch_size, 1))
         
         delta = target - critic_value
         
-        actions_discrete = np.zeros([1, self.env.discrete_action_space.n])
-        actions_discrete[np.arange(1), action_discrete] = 1.0
-    
-        self.actor.fit([state, delta], [actions_discrete, action_continuous], verbose = 0) #verbose = 0 stops outputs from displaying
-        self.critic.fit(state, target, verbose = 0)
+        actions_discrete = np.zeros((batch_size, self.env.discrete_action_space.n))
+        actions_discrete[np.arange(batch_size), action_discrete] = 1
+        
+        #print(target.shape, critic_value.shape)
+        #print(state.shape, delta.shape, actions_discrete.shape, action_continuous.shape)
+        self.actor.fit([state, delta], [actions_discrete, action_continuous], verbose = 0, batch_size = batch_size) #verbose = 0 stops outputs from displaying
+        self.critic.fit(state, target, verbose = 0, batch_size = batch_size)
         
         
 #agent = Agent(env = simulator(), alpha = 1e-4, beta = 5e-4, gamma = 0.99)
