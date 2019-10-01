@@ -105,7 +105,7 @@ class Agent(object): #  todo make class like that hybrid paper
         
     
     def learn(self, state, action, reward, next_state, done, batch_size, verbose = 0):
-        reward = reward.reshape((batch_size, 1))
+        reward = reward
         #assert reward.shape == (batch_size, 1), "wrong reward shape"
         state = state
         next_state = next_state
@@ -119,31 +119,32 @@ class Agent(object): #  todo make class like that hybrid paper
         
         # Compute param loss function
         policy_continuous_predict = self.actor_param.predict(state)
-        dqn_predict_given_param = self.actor_DQN.predict(state, policy_continuous_predict)
-        loss_param = np.sum(dqn_predict, axis = 1)
-        assert loss_param.shape == (batch_size, 1), "loss_param.shape wrong"
+        dqn_predict_given_param = self.actor_DQN.predict([state, policy_continuous_predict])
+        loss_param = np.sum(dqn_predict_given_param, axis = 1)
+        loss_param = loss_param.reshape((batch_size, 1))
+        #assert loss_param.shape == (batch_size, 1), f"loss_param.shape wrong: {loss_param}"
         
         #compute DQN loss function
         #First compute Q value for the taken discrete action, given the current state and continuous action taken
-        dqn_predict_given_continuous = self.actor_DQN.predict(state, action_continuous)
+        dqn_predict_given_continuous = self.actor_DQN.predict([state, action_continuous])
         values = np.zeros((batch_size, self.env.discrete_action_space.n))
         values[np.arange(batch_size), action_discrete] = dqn_predict_given_continuous[np.arange(batch_size), action_discrete]
         
         #Next compute the Q value of the next state given the next state and the NN weights for both networks
         policy_continuous_predict = self.actor_param.predict(next_state)
-        critic_values_next = self.actor_DQN.predict(next_state, policy_continuous_predict)
+        dqn_predict_next = self.actor_DQN.predict([next_state, policy_continuous_predict])
         values_next = np.zeros((batch_size, self.env.discrete_action_space.n))
-        values_next[np.arange(batch_size), action_discrete] = np.argmax(dqn_predict[np.arange(batch_size), action_discrete])
+        values_next[np.arange(batch_size), action_discrete] = np.argmax(dqn_predict_next[np.arange(batch_size), action_discrete])
         
         reward_matrix = np.zeros((batch_size, self.env.discrete_action_space.n))
         reward_matrix[np.arange(batch_size), action_discrete] = reward
         
         if done == False:
-            target = reward + self.gamma*values_next
+            target = reward_matrix + self.gamma*values_next
         if done == True:
-            target = reward
+            target = reward_matrix
         
-        assert target.shape == (batch_size, self.env.discrete_action_space.shape[0])
+        assert target.shape == (batch_size, self.env.discrete_action_space.n), target
         #if target.shape != (batch_size, 1): target = target.reshape((batch_size, 1))
         
         
