@@ -41,11 +41,13 @@ class Agent(object): #  todo make class like that hybrid paper
         
         #Define DQN
         input_state_DQN = Input(shape=self.env.observation_space.shape, name = "Input_state_DQN")
+        dense1_state_DQN = Dense(self.layer_size, activation = 'relu', name = "dense1_state_DQN")(input_state_DQN)
         input_param_DQN = Input(shape = self.env.continuous_action_space.shape, name = "input_param_DQN")
+        dense1_param_DQN = Dense(self.layer_size, activation = 'relu', name = "dense1_param_DQN")(input_param_DQN)
         
-        input_DQN = Add()([input_state_DQN, input_param_DQN])
-        dense1_DQN = Dense(self.layer_size, activation='relu')(input_DQN)
-        dense2_DQN = Dense(self.layer_size, activation = 'relu')(dense1_DQN)
+        input_DQN = Add()([dense1_state_DQN, dense1_param_DQN])
+        dense1_DQN = Dense(self.layer_size, activation='relu', name = "dense1_DQN")(input_DQN)
+        dense2_DQN = Dense(self.layer_size, activation = 'relu', name = "dense2_DQN")(dense1_DQN)
 
         policy_discrete_probs = Dense(self.env.discrete_action_space.n, activation = 'linear', name = "discrete_action_output")(dense2_DQN)
 
@@ -81,8 +83,8 @@ class Agent(object): #  todo make class like that hybrid paper
         
         state = observation[np.newaxis, :]
 
-        policy_continuous_predict = self.actor_param(state)
-        policy_discrete_probs = softmax(self.actor_DQN(state, policy_continuous_predict))
+        policy_continuous_predict = self.actor_param.predict(state)
+        policy_discrete_probs = softmax(self.actor_DQN.predict([state, policy_continuous_predict]))
         policy_discrete_probs = policy_discrete_probs[0]    
             
         
@@ -103,19 +105,20 @@ class Agent(object): #  todo make class like that hybrid paper
         
     
     def learn(self, state, action, reward, next_state, done, batch_size, verbose = 0):
-        assert reward.shape == (batch_size, 1), "wrong reward shape"
+        reward = reward.reshape((batch_size, 1))
+        #assert reward.shape == (batch_size, 1), "wrong reward shape"
         state = state
         next_state = next_state
-        assert state.shape == (batch_size, self.observation_space.shape[0]), "state shape wrong"
+        assert state.shape == (batch_size, self.env.observation_space.shape[0]), "state shape wrong"
         
         action_discrete = action[:, 0].astype('int')
-        assert action_discrete.shape == (batch_size, self.env.discrete_action_space.n), "discrete action space wrong"
+        assert action_discrete.shape == (batch_size,), "discrete action space wrong"
         
-        action_continuous  = action[:, 1]
-        assert action_continuous.shape == (batch_size, 1), "continuous action space wrong"
+        action_continuous  = action[:, 1].reshape(batch_size, 1)
+        #assert action_continuous.shape == (batch_size, 1), "continuous action space wrong"
         
         # Compute param loss function
-        policy_continuous_predict = self.actor_param(state)
+        policy_continuous_predict = self.actor_param.predict(state)
         dqn_predict_given_param = self.actor_DQN.predict(state, policy_continuous_predict)
         loss_param = np.sum(dqn_predict, axis = 1)
         assert loss_param.shape == (batch_size, 1), "loss_param.shape wrong"
@@ -127,17 +130,21 @@ class Agent(object): #  todo make class like that hybrid paper
         values[np.arange(batch_size), action_discrete] = dqn_predict_given_continuous[np.arange(batch_size), action_discrete]
         
         #Next compute the Q value of the next state given the next state and the NN weights for both networks
-        policy_continuous_predict = self.actor_param(next_state)
+        policy_continuous_predict = self.actor_param.predict(next_state)
         critic_values_next = self.actor_DQN.predict(next_state, policy_continuous_predict)
         values_next = np.zeros((batch_size, self.env.discrete_action_space.n))
         values_next[np.arange(batch_size), action_discrete] = np.argmax(dqn_predict[np.arange(batch_size), action_discrete])
         
+        reward_matrix = np.zeros((batch_size, self.env.discrete_action_space.n))
+        reward_matrix[np.arange(batch_size), action_discrete] = reward
+        
         if done == False:
             target = reward + self.gamma*values_next
         if done == True:
-            target = np.array(reward)
-            
-        if target.shape != (batch_size, 1): target = target.reshape((batch_size, 1))
+            target = reward
+        
+        assert target.shape == (batch_size, self.env.discrete_action_space.shape[0])
+        #if target.shape != (batch_size, 1): target = target.reshape((batch_size, 1))
         
         
         
