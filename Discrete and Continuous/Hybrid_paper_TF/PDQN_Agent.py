@@ -16,6 +16,7 @@ class Agent(object):
                  max_size=1000000, layer1_size=400, layer2_size=300,
                  batch_size=64):
         self.n_discrete_actions = n_discrete_actions
+        self.discrete_action_space = [i for i in range(n_discrete_actions)]
         self.gamma = gamma
         self.tau = tau  # for the soft update
         self.memory = ReplayBuffer(max_size, input_dims, n_actions)
@@ -94,18 +95,21 @@ class Agent(object):
             return
         state, action, reward, new_state, done = \
                                       self.memory.sample_buffer(self.batch_size)
+        action_discrete = action[0]
+        action_values = np.array(self.discrete_action_space, dtype=np.int8)
+        discrete_action_indices = np.dot(action_discrete, action_values)
 
         Qvalues = self.target_actorDQN.predict(state, self.target_actorDPG.predict(state))
         Qvalues_next = self.target_actorDQN.predict(new_state,
                                                      self.target_actorDPG.predict(new_state))
 
-        Q_target = Qvalues.copy()
+        Q_target = Qvalues.copy()  #just to get shape and make difference 0 for everything that wasn't the taken action
         batch_index = np.arange(self.batch_size, dtype=np.int32)
-        Q_target[batch_index, discrete_action_indeces] = reward + self.gamma*np.max(Qvalues_next, axis=1)*done
+        Q_target[batch_index, discrete_action_indices] = reward + self.gamma*np.max(Qvalues_next, axis=1)*done
         # done is 1 - done flag from environment
         assert Q_target.shape == (self.batch_size, self.n_discrete_actions), "Q target wrong shape"
 
-        _ = self.actor_DQN.train(state, action, Q_target)
+        _ = self.actor_DQN.train(state, action_discrete, Q_target)
 
         a_outs = self.actor_DPG.predict(state)
         grads = self.actor_DQN.get_action_gradients(state, a_outs)
