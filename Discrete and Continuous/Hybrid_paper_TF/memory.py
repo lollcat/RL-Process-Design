@@ -7,7 +7,7 @@ from collections import deque
 import numpy as np
 
 
-class Memory:
+class ReplayBuffer:
     """
 Taken from
 https://github.com/udacity/deep-learning/blob/master/reinforcement/Q-learning-cart.ipynb

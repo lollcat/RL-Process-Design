@@ -19,7 +19,7 @@ class Agent(object):
         self.discrete_action_space = [i for i in range(n_discrete_actions)]
         self.gamma = gamma
         self.tau = tau  # for the soft update
-        self.memory = ReplayBuffer(max_size, input_dims, n_actions)
+        self.memory = ReplayBuffer(max_size)
         self.batch_size = batch_size
         self.sess = tf.Session()
         self.actor_DPG = ActorDPG(alpha, n_continuous_actions, 'ActorDPG', input_dims, self.sess,
@@ -63,9 +63,9 @@ class Agent(object):
             self.target_actorDQN.sess.run(self.update_actorDQN)
             self.target_actorDPG.sess.run(self.update_actorDPG)
 
-    def remember(self, state, action, reward, new_state, done):
+    def remember(self, state, action_continuous, action_discrete, reward, new_state, done):
         done = np.ones(done.shape) - done
-        self.memory.add(state, action, reward, new_state, done)
+        self.memory.add(state, action_continuous, action_discrete, reward, new_state, done)
 
     def choose_action(self, state, current_step, stop_step):
         state = state[np.newaxis, :]
@@ -94,8 +94,8 @@ class Agent(object):
     def learn(self):
         if len(self.memory.buffer) < self.batch_size:  # first fill memory
             return
-        state, action, reward, new_state, done = self.memory.sample(self.batch_size)
-        action_discrete = action[0]
+
+        state, action_continuous, action_discrete, reward, new_state, done = self.memory.sample(self.batch_size)
         action_values = np.array(self.discrete_action_space, dtype=np.int8)
         discrete_action_indices = np.dot(action_discrete, action_values)
 
