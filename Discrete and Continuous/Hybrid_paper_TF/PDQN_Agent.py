@@ -64,7 +64,8 @@ class Agent(object):
             self.target_actorDPG.sess.run(self.update_actorDPG)
 
     def remember(self, state, action, reward, new_state, done):
-        self.memory.store_transition(state, action, reward, new_state, done)
+        done = np.ones(done.shape) - done
+        self.memory.add(state, action, reward, new_state, done)
 
     def choose_action(self, state, current_step, stop_step):
         state = state[np.newaxis, :]
@@ -91,19 +92,18 @@ class Agent(object):
         return action_discrete
 
     def learn(self):
-        if self.memory.mem_cntr < self.batch_size:  # first fill memory
+        if len(self.memory.buffer) < self.batch_size:  # first fill memory
             return
-        state, action, reward, new_state, done = \
-                                      self.memory.sample_buffer(self.batch_size)
+        state, action, reward, new_state, done = self.memory.sample(self.batch_size)
         action_discrete = action[0]
         action_values = np.array(self.discrete_action_space, dtype=np.int8)
         discrete_action_indices = np.dot(action_discrete, action_values)
 
         Qvalues = self.target_actorDQN.predict(state, self.target_actorDPG.predict(state))
         Qvalues_next = self.target_actorDQN.predict(new_state,
-                                                     self.target_actorDPG.predict(new_state))
+                                                    self.target_actorDPG.predict(new_state))
 
-        Q_target = Qvalues.copy()  #just to get shape and make difference 0 for everything that wasn't the taken action
+        Q_target = Qvalues.copy()  # just to get shape and make difference 0 for everything that wasn't the taken action
         batch_index = np.arange(self.batch_size, dtype=np.int32)
         Q_target[batch_index, discrete_action_indices] = reward + self.gamma*np.max(Qvalues_next, axis=1)*done
         # done is 1 - done flag from environment
