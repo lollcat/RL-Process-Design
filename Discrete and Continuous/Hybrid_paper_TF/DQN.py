@@ -26,7 +26,7 @@ class ActorDQN(object):
 
         self.optimize = tf.train.AdamOptimizer(self.lr).minimize(self.loss)
 
-        self.action_gradients = tf.gradients(self.Q, self.actions_continuous)
+        self.continuous_action_gradients = tf.gradients(self.Q, self.actions_continuous)
 
     def build_network(self):  # TODO: Add n_discrete_actions and n_continuous actions to both networks
         with tf.variable_scope(self.name):
