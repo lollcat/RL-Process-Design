@@ -3,6 +3,7 @@ from Distillation_disc_cont import Simulator
 import numpy as np
 from PDQN_Agent import Agent
 from utils import plotLearning
+import matplotlib.pyplot as plt
 
 
 env = Simulator()
@@ -30,10 +31,20 @@ for i in range(total_eps):
         #env.render()
 
     score_history.append(score)
-    print('episode ', i, 'score %.2f' % score,
+    if i%50 == 0:
+        print('episode ', i, 'score %.2f' % score,
           'trailing 100 games avg %.3f' % np.mean(score_history[-100:]))
 
     if i%100 == 0: agent.save_models
 
-filename = 'Pendulum-alpha00005-beta0005-800-600-optimized.png'
-plotLearning(score_history, filename, window=100)
+def running_mean(x, N):
+    cumsum = np.cumsum(np.insert(x, 0, 0))
+    return (cumsum[N:] - cumsum[:-N]) / N
+
+episodes = np.arange(total_eps)
+smoothed_rews = running_mean(score_history, 10)
+plt.plot(episodes[-len(smoothed_rews):], smoothed_rews)
+plt.plot(episodes, score_history,color='grey', alpha=0.3)
+plt.xlabel("steps")
+plt.ylabel("reward")
+plt.legend(["avg reward", "reward"])
