@@ -2,7 +2,7 @@ import os
 import tensorflow.compat.v1 as tf
 import numpy as np
 from tensorflow.compat.v1 import random_uniform
-from tensorflow.compat.v1.keras.backend as tf_k
+import tensorflow.compat.v1.keras.backend as tf_k
 
 
 
