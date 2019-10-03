@@ -39,7 +39,7 @@ class ActorDQN(object):
                                           name='actions')
 
             self.Qvalues_target = tf.placeholder(tf.float32,
-                                           shape=[None,self.n_discrete_actions],
+                                           shape=[None, self.n_discrete_actions],
                                            name='Qvalues')
 
             f1 = 1. / np.sqrt(self.fc1_dims)

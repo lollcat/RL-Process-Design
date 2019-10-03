@@ -119,10 +119,10 @@ class Agent(object):
         # done is 1 - done flag from environment
         assert Q_target.shape == (self.batch_size, self.n_discrete_actions), "Q target wrong shape"
 
-        action_discrete_matrix = np.zeros((batch_size, self.n_discrete_actions))
-        actions_discrete_matrix[np.arange(batch_size), action_discrete] = 1
+        #action_discrete_matrix = np.zeros((self.batch_size, self.n_discrete_actions))
+        #action_discrete_matrix[np.arange(self.batch_size), action_discrete] = 1
 
-        _ = self.actor_DQN.train(state, action_discrete_matrix, Q_target)
+        _ = self.actor_DQN.train(state, action_continuous, Q_target)
 
         a_outs = self.actor_DPG.predict(state)
         grads = self.actor_DQN.get_action_gradients(state, a_outs)
