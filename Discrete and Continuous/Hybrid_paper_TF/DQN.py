@@ -70,7 +70,7 @@ class ActorDQN(object):
 
             self.loss = tf.losses.mean_squared_error(self.Qvalues_target, self.Qvalues)
 
-    def predict(self, inputs, actions):
+    def predict(self, inputs, actions_continuous):
         return self.sess.run(self.Qvalues,
                              feed_dict={self.input: inputs,
                                         self.actions_continuous: actions_continuous})

@@ -69,13 +69,15 @@ class Agent(object):
     def choose_action(self, state, current_step, stop_step):
         state = state[np.newaxis, :]
         # get continuous action
-        mu = self.actor_DPG.predict(state) # returns list of list so get 0 ith element later on
+        mu = self.actor_DPG.predict(state)  # returns list of list so get 0 ith element later on
         noise = self.noise()
         mu_prime = mu + noise
-        action_continuous = mu_prime[0]
+        action_continuous = mu_prime  #[0]
+        assert action_continuous.shape == (1, 1)
+        # TODO this will need to be generalised by adding self.n_continuous_actions
 
         # get discrete action
-        predict_discrete = self.actor_DQN.predict([state, action_continuous])
+        predict_discrete = self.actor_DQN.predict(state, action_continuous)
         action_discrete = self.eps_greedy_action(predict_discrete, current_step, stop_step)
 
         return action_continuous, action_discrete

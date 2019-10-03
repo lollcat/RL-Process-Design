@@ -46,7 +46,7 @@ class Simulator(Env):
         
     def step(self, action, same_action_punish = True): #note that same_action_punish should get removed as it is a hard coded heuristic
         reward = 0
-        action_discrete, action_continuous = action
+        action_continuous, action_discrete = action
         done = False
         self.steps += 1
         if self.steps > 20: done = True

@@ -22,7 +22,7 @@ for i in range(total_eps):
     while not done:
         action = agent.choose_action(obs, i, total_eps)
         action_continuous, action_discrete = action
-        new_state, reward, done, info = env.step(act)
+        new_state, reward, done, info = env.step(action)
         agent.remember(obs, action_continuous, action_discrete, reward, new_state, int(done))
         agent.learn()
         score += reward
