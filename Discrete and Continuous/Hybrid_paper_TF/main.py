@@ -16,17 +16,17 @@ total_eps = 5000
 
 score_history = []
 for i in range(total_eps):
-    obs = env.reset()
+    state = env.reset()
     done = False
     score = 0
     while not done:
-        action = agent.choose_action(obs, i, total_eps)
+        action = agent.choose_action(state, i, total_eps)
         action_continuous, action_discrete = action
         new_state, reward, done, info = env.step(action)
-        agent.remember(obs, action_continuous, action_discrete, reward, new_state, int(done))
+        agent.remember(state, action_continuous, action_discrete, reward, new_state, int(done))
         agent.learn()
         score += reward
-        obs = new_state
+        state = new_state
         #env.render()
 
     score_history.append(score)
