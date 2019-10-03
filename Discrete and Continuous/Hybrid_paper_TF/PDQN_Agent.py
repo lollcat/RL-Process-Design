@@ -1,13 +1,12 @@
-import os
 import tensorflow.compat.v1 as tf
 import numpy as np
-from tensorflow.compat.v1 import random_uniform
-import tensorflow.compat.v1.keras.backend as tf_k
+
 
 from DQN import ActorDQN
 from ActorParam import ActorDPG
 from OrnsteinNoise import OUActionNoise
 from Memory import ReplayBuffer
+tf.disable_eager_execution()
 
 
 class Agent(object):

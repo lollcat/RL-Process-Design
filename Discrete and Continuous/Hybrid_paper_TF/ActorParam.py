@@ -1,8 +1,9 @@
 import os
 import tensorflow.compat.v1 as tf
 import numpy as np
-from tensorflow.compat.v1 import random_uniform
+from tensorflow.compat.v1.initializers import random_uniform
 
+tf.disable_eager_execution()
 
 class ActorDPG(object):
     def __init__(self, lr, n_actions, name, input_dims, sess, fc1_dims,
