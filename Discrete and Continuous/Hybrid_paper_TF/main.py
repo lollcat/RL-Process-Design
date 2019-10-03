@@ -10,16 +10,17 @@ agent = Agent(alpha=0.0001, beta=0.00001, input_dims=env.observation_space.shape
               env=env, batch_size=64, layer1_size=800, layer2_size=600,
               n_discrete_actions=1, n_continuous_actions=1)
 np.random.seed(0)
+total_eps = 5000
 # if there is a saved agent then uncomment below:
 # agent.load_models()
 
 score_history = []
-for i in range(5000):
+for i in range(total_eps):
     obs = env.reset()
     done = False
     score = 0
     while not done:
-        action = agent.choose_action(obs)
+        action = agent.choose_action(obs, i, total_eps)
         action_continuous, action_discrete = action
         new_state, reward, done, info = env.step(act)
         agent.remember(obs, action_continuous, action_discrete, reward, new_state, int(done))
