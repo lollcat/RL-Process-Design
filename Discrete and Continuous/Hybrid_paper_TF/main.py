@@ -8,7 +8,7 @@ from utils import plotLearning
 env = Simulator()
 agent = Agent(alpha=0.0001, beta=0.00001, input_dims=env.observation_space.shape, tau=0.001,
               env=env, batch_size=64, layer1_size=800, layer2_size=600,
-              n_discrete_actions=1, n_continuous_actions=1)
+              n_discrete_actions=env.discrete_action_space.n, n_continuous_actions=1)
 np.random.seed(0)
 total_eps = 5000
 # if there is a saved agent then uncomment below:

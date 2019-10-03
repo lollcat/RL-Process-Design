@@ -11,7 +11,7 @@ tf.disable_eager_execution()
 
 class Agent(object):
     # beta must be "asymptotically negligible relative to alpha
-    def __init__(self, alpha, beta, input_dims, tau, env, gamma=0.99, n_continuous_actions=1, n_discrete_actions=1,
+    def __init__(self, alpha, beta, input_dims, tau, env, gamma=0.99, n_continuous_actions=1, n_discrete_actions=5,
                  max_size=1000000, layer1_size=400, layer2_size=300,
                  batch_size=64):
         self.n_discrete_actions = n_discrete_actions
@@ -73,13 +73,14 @@ class Agent(object):
         noise = self.noise()
         mu_prime = mu + noise
         action_continuous = mu_prime  #[0]
-        assert action_continuous.shape == (1, 1)
+        assert action_continuous.shape == (1, 1)  # need this shape to run through actor_DQN
         # TODO this will need to be generalised by adding self.n_continuous_actions
 
         # get discrete action
         predict_discrete = self.actor_DQN.predict(state, action_continuous)
         action_discrete = self.eps_greedy_action(predict_discrete, current_step, stop_step)
 
+        action_continuous = action_continuous[0]  # take it back to the correct shape
         return action_continuous, action_discrete
 
     def eps_greedy_action(self, predict_discrete, current_step, stop_step, max_prob=0.95, min_prob=0.05):
@@ -96,9 +97,17 @@ class Agent(object):
         if len(self.memory.buffer) < self.batch_size:  # first fill memory
             return
 
-        state, action_continuous, action_discrete, reward, new_state, done = self.memory.sample(self.batch_size)
-        action_values = np.array(self.discrete_action_space, dtype=np.int8)
-        discrete_action_indices = np.dot(action_discrete, action_values)
+        batch = self.memory.sample(self.batch_size)
+        state = np.array([each[0] for each in batch])
+        action_continuous = np.array([each[1] for each in batch])
+        action_discrete = np.array([each[2] for each in batch])
+        reward = np.array([each[3] for each in batch])
+        new_state = np.array([each[4] for each in batch])
+        done = np.array([each[5] for each in batch])
+
+        action_discrete = np.array(action_discrete)
+        #action_values = np.array([self.discrete_action_space], dtype=np.int8)
+        #discrete_action_indices = np.dot(action_discrete, action_values)
 
         Qvalues = self.target_actorDQN.predict(state, self.target_actorDPG.predict(state))
         Qvalues_next = self.target_actorDQN.predict(new_state,
@@ -106,11 +115,14 @@ class Agent(object):
 
         Q_target = Qvalues.copy()  # just to get shape and make difference 0 for everything that wasn't the taken action
         batch_index = np.arange(self.batch_size, dtype=np.int32)
-        Q_target[batch_index, discrete_action_indices] = reward + self.gamma*np.max(Qvalues_next, axis=1)*done
+        Q_target[batch_index, action_discrete] = reward + self.gamma*np.max(Qvalues_next, axis=1)*done
         # done is 1 - done flag from environment
         assert Q_target.shape == (self.batch_size, self.n_discrete_actions), "Q target wrong shape"
 
-        _ = self.actor_DQN.train(state, action_discrete, Q_target)
+        action_discrete_matrix = np.zeros((batch_size, self.n_discrete_actions))
+        actions_discrete_matrix[np.arange(batch_size), action_discrete] = 1
+
+        _ = self.actor_DQN.train(state, action_discrete_matrix, Q_target)
 
         a_outs = self.actor_DPG.predict(state)
         grads = self.actor_DQN.get_action_gradients(state, a_outs)
