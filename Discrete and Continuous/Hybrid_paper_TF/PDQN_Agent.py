@@ -63,8 +63,8 @@ class Agent(object):
             self.target_actorDPG.sess.run(self.update_actorDPG)
 
     def remember(self, state, action_continuous, action_discrete, reward, new_state, done):
-        done = np.ones(done.shape) - done
-        self.memory.add(state, action_continuous, action_discrete, reward, new_state, done)
+        done = 1 - done
+        self.memory.add((state, action_continuous, action_discrete, reward, new_state, done))
 
     def choose_action(self, state, current_step, stop_step):
         state = state[np.newaxis, :]
