@@ -87,7 +87,7 @@ class Agent(object):
         explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
         random = np.random.rand()
         if random > explore_threshold:
-            action_discrete = np.random.choice(self.n_discrete_actions)
+            action_discrete = np.random.choice(self.n_discrete_actions) # ,p = np.softmax(predict_discrete)
         else:
             action_discrete = np.argmax(predict_discrete)
 
