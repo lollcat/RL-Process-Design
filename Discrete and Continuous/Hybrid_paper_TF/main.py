@@ -11,7 +11,7 @@ agent = Agent(alpha=0.00001, beta=0.000001, input_dims=env.observation_space.sha
               env=env, batch_size=64, layer1_size=800, layer2_size=600,
               n_discrete_actions=env.discrete_action_space.n, n_continuous_actions=1)
 np.random.seed(0)
-total_eps = 10000
+total_eps = 80000
 # if there is a saved agent then uncomment below:
 #agent.load_models()
 
@@ -36,7 +36,7 @@ for i in range(total_eps):
           'trailing 100 games avg %.3f' % np.mean(score_history[-100:]))
 
     if i%1000 == 0:
-        pass
+        env.render()
         #agent.save_models()
 
 #agent.save_models()
@@ -55,11 +55,10 @@ plt.ylabel("reward")
 plt.legend(["avg reward", "reward"])
 plt.show()
 
-"""
+
 done = False
 state = env.reset()
 while done is False: # run an episode
     action = agent.best_action(state)
     action = action_continuous, action_discrete
     new_state, reward, done, info = env.step(action)
-"""
