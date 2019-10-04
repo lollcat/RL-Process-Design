@@ -27,13 +27,14 @@ class Simulator(Env):
 
         #spaces for mixed action space?
         self.discrete_action_space = spaces.Discrete(discrete_action_size)
-        self.continuous_action_space = spaces.Box(low = 0.5, high = 0.999, shape = (continuous_action_number,))
+        self.continuous_action_space = spaces.Box(low=0.8, high=0.999, shape=(continuous_action_number,))
         self.observation_space = spaces.Box(low = 0, high = 9.1, shape = self.initial_state.shape)
         
         self.total_cost = 0
         self.stream_table = [self.initial_state.copy()]
         self.outlet_streams = []
         self.sep_order = []
+        self.split_order = []
         self.current_stream = 0
         self.steps = 0
         
@@ -44,16 +45,18 @@ class Simulator(Env):
             return stream
         self.product_streams = [maker(empty, self.initial_state, i) for i in range(self.initial_state.size)]
         
-    def step(self, action, same_action_punish = True): #note that same_action_punish should get removed as it is a hard coded heuristic
+    def step(self, action, same_action_punish=True): #note that same_action_punish should get removed as it is a hard coded heuristic
         reward = 0
         action_continuous, action_discrete = action
+        LK_split= self.action_continuous_definer(action_continuous)
         done = False
         self.steps += 1
         if self.steps > 20: done = True
         previous_state = self.state.copy()       
         Light_Key = action_discrete
+        self.sep_order.append(Light_Key)
         Heavy_Key = Light_Key + 1
-        LK_split = action_continuous
+        self.split_order.append(LK_split)
         HK_split = 1 - LK_split
         #HK_split = action[2]
         tops = np.zeros(self.initial_state.shape)
@@ -67,8 +70,7 @@ class Simulator(Env):
         #print(LK_B)
         if LK_D in [1,0] or LK_B in [1,0] or math.isnan(LK_D) or math.isnan(LK_B): #invalid action (HK LK split doesnt exist)
             reward = -100 #big punishment, and state etc remain the same
-        else:                #valid action  
-            self.sep_order.append(Light_Key)
+        else:                #valid action
             if len(self.sep_order) > self.max_columns: done = True
             self.stream_table.append(tops)
             self.stream_table.append(bots)
@@ -108,12 +110,14 @@ class Simulator(Env):
         self.sep_order = []
         self.total_cost = 0
         self.steps = 0
+        self.outlet_streams = []
+        self.split_order = []
         return self.state
     
-    def render(self, mode = 'human'):
-        print(f'total cost: {self.total_cost} sep_order = {self.sep_order}')
+    def render(self, mode='human'):
+        print(f'total cost: {self.total_cost} sep_order: {self.sep_order} split_order: {self.split_order} \n')
     
-    def test_random(self, n_steps = 5):       
+    def test_random(self, n_steps=5):
         for i in range(n_steps): 
             LK = np.random.randint(0, self.initial_state.size-1)
             LK_split = np.random.rand(1)
@@ -121,6 +125,9 @@ class Simulator(Env):
             state, reward, done, _ = self.step(action)
             print(f'reward: {reward}, LK: {LK}, LK_split: {LK_split}')
 
-
-
-
+    def action_continuous_definer(self, action_continuous):
+        # agent gives continuous argument between -1 and 1 (width 2)
+        # reformat split agent action * split range / agent action range + (split minimum - agent minimum)
+        LK_Split = action_continuous*(self.continuous_action_space.high - self.continuous_action_space.low)/2 \
+                   + self.continuous_action_space.low - (-1)
+        return LK_Split

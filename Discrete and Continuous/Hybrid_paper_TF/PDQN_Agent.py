@@ -22,7 +22,7 @@ class Agent(object):
         self.batch_size = batch_size
         self.sess = tf.Session()
         self.actor_DPG = ActorDPG(alpha, n_continuous_actions, 'ActorDPG', input_dims, self.sess,
-                                  layer1_size, layer2_size, env.continuous_action_space.high)
+                                  layer1_size, layer2_size, env.continuous_action_space.high) # TODO make continuous actor between 1 and -1
         self.actor_DQN = ActorDQN(beta, n_discrete_actions, n_continuous_actions, 'ActorDQN', input_dims, self.sess,
                                   layer1_size, layer2_size)
 
@@ -92,6 +92,13 @@ class Agent(object):
             action_discrete = np.argmax(predict_discrete)
 
         return action_discrete
+
+    def best_action(self, state):
+        state = state[np.newaxis, :]
+        action_continuous = self.actor_DPG.predict(state)
+        predict_discrete = self.actor_DQN.predict(state, action_continuous)
+        action_discrete = np.argmax(predict_discrete)
+        return action_continuous, action_discrete
 
     def learn(self):
         if len(self.memory.buffer) < self.batch_size:  # first fill memory
