@@ -1,5 +1,4 @@
-# RL-Process-Design
-## Deep reinforcement learning for design of chemical engineering processes
+# Deep Reinforcement Learning for Design of Chemical Engineering Processes
 
 # Table of Contents
 1. [Hybrid_Action_Environment](#Hybrid_Action_Environment)
