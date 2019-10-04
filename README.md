@@ -2,9 +2,9 @@
 ## Deep reinforcement learning for design of chemical engineering processes
 
 # Table of Contents
-1. [Hybrid Action Environment Environment](#Hybrid Action Environment Environment)
-2. [P-DQN Agent](#P-DQN Agent)
+1. [Hybrid_Action_Environment](#Hybrid_Action_Environment)
+2. [P-DQN_Agent](#P-DQN_Agent)
 
-## Hybrid Action Environment Environment
+## Hybrid_Action_Environment
 
-## P-DQN Agent
+## P-DQN_Agent
