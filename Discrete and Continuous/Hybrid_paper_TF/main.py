@@ -11,10 +11,10 @@ agent = Agent(alpha=0.0001, beta=0.00001, input_dims=env.observation_space.shape
               env=env, batch_size=32, layer1_size=64, layer2_size=32, layer3_size=32,
               n_discrete_actions=env.discrete_action_space.n, n_continuous_actions=1)
 np.random.seed(0)
-total_eps = 10000
+total_eps = 50000
 total_eps_greedy = total_eps/2
 # if there is a saved agent then uncomment below:
-#agent.load_models()
+agent.load_models()
 
 score_history = []
 for i in range(total_eps):
@@ -32,7 +32,7 @@ for i in range(total_eps):
         # env.render()
 
     score_history.append(score)
-    if i%50 == 0:
+    if i%100 == 0:
         print('episode ', i, 'score %.2f' % score,
           'trailing 100 games avg %.3f' % np.mean(score_history[-100:]))
 
