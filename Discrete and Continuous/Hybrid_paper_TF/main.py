@@ -36,11 +36,11 @@ for i in range(total_eps):
         print('episode ', i, 'score %.2f' % score,
           'trailing 100 games avg %.3f' % np.mean(score_history[-100:]))
 
-    if i%500 == 0:
+    if i%500 == 0 and i > 10:
         env.render()
         agent.save_models()
 
-    if i % (total_eps/10) == 0:
+    if i % (total_eps/10) and i > 100 == 0:
         plotter = Plotter(score_history, i)
         plotter.plot()
 
