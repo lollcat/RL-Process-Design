@@ -7,7 +7,7 @@ tf.disable_eager_execution()
 
 class ActorDPG(object):
     def __init__(self, lr, n_actions, name, input_dims, sess, fc1_dims,
-                 fc2_dims, action_bound, batch_size=64, chkpt_dir='tmp/ddpg'):
+                 fc2_dims, action_bound, batch_size=32, chkpt_dir='./tmp/ddpg/'):
         self.lr = lr
         self.n_actions = n_actions
         self.name = name
@@ -42,23 +42,26 @@ class ActorDPG(object):
                                           shape=[None, self.n_actions],
                                           name='gradients')
 
+
             f1 = 1. / np.sqrt(self.fc1_dims)
             dense1 = tf.layers.dense(self.input, units=self.fc1_dims,
                                      kernel_initializer=random_uniform(-f1, f1),
                                      bias_initializer=random_uniform(-f1, f1))
             batch1 = tf.layers.batch_normalization(dense1)
             layer1_activation = tf.nn.relu(batch1)
+
             f2 = 1. / np.sqrt(self.fc2_dims)
             dense2 = tf.layers.dense(layer1_activation, units=self.fc2_dims,
                                      kernel_initializer=random_uniform(-f2, f2),
                                      bias_initializer=random_uniform(-f2, f2))
             batch2 = tf.layers.batch_normalization(dense2)
             layer2_activation = tf.nn.relu(batch2)
+
             f3 = 0.003
             mu = tf.layers.dense(layer2_activation, units=self.n_actions,
-                            activation='tanh',
-                            kernel_initializer= random_uniform(-f3, f3),
-                            bias_initializer=random_uniform(-f3, f3))
+                                 activation='tanh',
+                                 kernel_initializer=random_uniform(-f3, f3),
+                                 bias_initializer=random_uniform(-f3, f3))
             self.mu = tf.multiply(mu, self.action_bound)
 
     def predict(self, inputs):

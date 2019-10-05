@@ -48,15 +48,17 @@ class Simulator(Env):
     def step(self, action, same_action_punish=True): #note that same_action_punish should get removed as it is a hard coded heuristic
         reward = 0
         action_continuous, action_discrete = action
-        LK_split= self.action_continuous_definer(action_continuous)
+        LK_split = self.action_continuous_definer(action_continuous)
+        self.split_order.append(LK_split)
+        Light_Key = action_discrete
+        self.sep_order.append(Light_Key)
+
         done = False
         self.steps += 1
         if self.steps > 20: done = True
-        previous_state = self.state.copy()       
-        Light_Key = action_discrete
-        self.sep_order.append(Light_Key)
+        previous_state = self.state.copy()
+
         Heavy_Key = Light_Key + 1
-        self.split_order.append(LK_split)
         HK_split = 1 - LK_split
         #HK_split = action[2]
         tops = np.zeros(self.initial_state.shape)
@@ -66,8 +68,8 @@ class Simulator(Env):
         bots = previous_state - tops
         LK_D = tops[Light_Key]/sum(tops)
         LK_B = bots[Light_Key]/sum(bots)
-        #Gets error for LK_B sometimes if choice doesn't make sense - resolved below
-        #print(LK_B)
+        # Gets error for LK_B sometimes if choice doesn't make sense - resolved below
+        # print(LK_B)
         if LK_D in [1,0] or LK_B in [1,0] or math.isnan(LK_D) or math.isnan(LK_B): #invalid action (HK LK split doesnt exist)
             reward = -100 #big punishment, and state etc remain the same
         else:                #valid action
@@ -93,13 +95,13 @@ class Simulator(Env):
             """Go to next stream as state, if stream only contains more than 95%wt of a single compound then go to next stream"""
             self.current_stream +=1
             self.state = self.stream_table[self.current_stream]
-            while max(np.divide(self.state,self.state.sum())) > 0.95: 
+            while max(np.divide(self.state, self.state.sum())) > 0.9:
                 self.outlet_streams.append(self.state)
                 reward += self.state.sum()**2*max(np.divide(self.state,self.state.sum()))**2 #reward proportional to stream flow and purity
-                if  np.array_equal(self.state,self.stream_table[-1]):
+                if np.array_equal(self.state, self.stream_table[-1]):
                     done = True
                     break 
-                self.current_stream +=1
+                self.current_stream += 1
                 self.state = self.stream_table[self.current_stream]
         return self.state, reward, done, {}
     
@@ -128,6 +130,7 @@ class Simulator(Env):
     def action_continuous_definer(self, action_continuous):
         # agent gives continuous argument between -1 and 1 (width 2)
         # reformat split agent action * split range / agent action range + (split minimum - agent minimum)
-        LK_Split = action_continuous*(self.continuous_action_space.high - self.continuous_action_space.low)/2 \
-                   + self.continuous_action_space.low - (-1)
+        LK_Split = self.continuous_action_space.low + (action_continuous - (-1))/2 \
+                   * (self.continuous_action_space.high - self.continuous_action_space.low)
+
         return LK_Split

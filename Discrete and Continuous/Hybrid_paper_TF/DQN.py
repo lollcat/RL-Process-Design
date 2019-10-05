@@ -8,13 +8,14 @@ import tensorflow.compat.v1.keras.backend as tf_k
 
 class ActorDQN(object):
     def __init__(self, lr, n_discrete_actions, n_continuous_actions, name, input_dims, sess, fc1_dims, fc2_dims,
-                 batch_size=64, chkpt_dir='tmp/ddpg'):
+                 fc3_dims, batch_size=32, chkpt_dir='./tmp/DQN/'):
         self.lr = lr
         self.n_discrete_actions = n_discrete_actions
         self.n_continuous_actions = n_continuous_actions
         self.name = name
         self.fc1_dims = fc1_dims
         self.fc2_dims = fc2_dims
+        self.fc3_dims = fc3_dims
         self.chkpt_dir = chkpt_dir
         self.input_dims = input_dims
         self.batch_size = batch_size
@@ -28,7 +29,7 @@ class ActorDQN(object):
 
         self.continuous_action_gradients = tf.gradients(self.Q, self.actions_continuous)
 
-    def build_network(self):  # TODO: Add n_discrete_actions and n_continuous actions to both networks
+    def build_network(self):
         with tf.variable_scope(self.name):
             self.input = tf.placeholder(tf.float32,
                                         shape=[None, *self.input_dims],
@@ -42,10 +43,12 @@ class ActorDQN(object):
                                            shape=[None, self.n_discrete_actions],
                                            name='Qvalues')
 
+            inputs = tf.concat([self.input, self.actions_continuous], axis=1, name = "DQN_concat")
             f1 = 1. / np.sqrt(self.fc1_dims)
-            dense1 = tf.layers.dense(self.input, units=self.fc1_dims,
+            dense1 = tf.layers.dense(inputs, units=self.fc1_dims,
                                      kernel_initializer=random_uniform(-f1, f1),
-                                     bias_initializer=random_uniform(-f1, f1))
+                                     bias_initializer=random_uniform(-f1, f1),
+                                     name="DQN_dense1")
             batch1 = tf.layers.batch_normalization(dense1)
             layer1_activation = tf.nn.relu(batch1)
 
@@ -54,16 +57,20 @@ class ActorDQN(object):
                                      kernel_initializer=random_uniform(-f2, f2),
                                      bias_initializer=random_uniform(-f2, f2))
             batch2 = tf.layers.batch_normalization(dense2)
+            layer2_activation = tf.nn.relu(batch2)
 
-            continuous_actions_in = tf.layers.dense(self.actions_continuous, units=self.fc2_dims,
-                                        activation='relu')
-            state_actions = tf.add(batch2, continuous_actions_in)
-            state_actions = tf.nn.relu(state_actions)
+            f3 = 1. / np.sqrt(self.fc3_dims)
+            dense3 = tf.layers.dense(layer2_activation, units=self.fc3_dims,
+                                     kernel_initializer=random_uniform(-f3, f3),
+                                     bias_initializer=random_uniform(-f3, f3))
+            batch3 = tf.layers.batch_normalization(dense3)
+            layer3_activation = tf.nn.relu(batch3)
 
-            f3 = 0.003
-            self.Qvalues = tf.layers.dense(state_actions, units=self.n_discrete_actions,
-                               kernel_initializer=random_uniform(-f3, f3),
-                               bias_initializer=random_uniform(-f3, f3),
+
+            f4 = 0.003
+            self.Qvalues = tf.layers.dense(layer3_activation, units=self.n_discrete_actions,
+                               kernel_initializer=random_uniform(-f4, f4),
+                               bias_initializer=random_uniform(-f4, f4),
                                kernel_regularizer=tf.keras.regularizers.l2(0.01))
 
             self.Q = tf_k.sum(self.Qvalues)

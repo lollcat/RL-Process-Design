@@ -12,7 +12,7 @@ tf.disable_eager_execution()
 class Agent(object):
     # beta must be "asymptotically negligible relative to alpha
     def __init__(self, alpha, beta, input_dims, tau, env, gamma=0.99, n_continuous_actions=1, n_discrete_actions=5,
-                 max_size=1000000, layer1_size=400, layer2_size=300,
+                 max_size=10000, layer1_size=64, layer2_size=32, layer3_size=32,
                  batch_size=64):
         self.n_discrete_actions = n_discrete_actions
         self.discrete_action_space = [i for i in range(n_discrete_actions)]
@@ -24,12 +24,12 @@ class Agent(object):
         self.actor_DPG = ActorDPG(alpha, n_continuous_actions, 'ActorDPG', input_dims, self.sess,
                                   layer1_size, layer2_size, env.continuous_action_space.high) # TODO make continuous actor between 1 and -1
         self.actor_DQN = ActorDQN(beta, n_discrete_actions, n_continuous_actions, 'ActorDQN', input_dims, self.sess,
-                                  layer1_size, layer2_size)
+                                  layer1_size, layer2_size, layer3_size)
 
         self.target_actorDPG = ActorDPG(alpha, n_continuous_actions, 'TargetActorDPG', input_dims, self.sess,
                                         layer1_size, layer2_size, env.continuous_action_space.high)
         self.target_actorDQN = ActorDQN(beta, n_discrete_actions, n_continuous_actions, 'TargetActorDQN', input_dims,
-                                        self.sess, layer1_size, layer2_size)
+                                        self.sess, layer1_size, layer2_size, layer3_size)
 
         self.noise = OUActionNoise(mu=np.zeros(n_continuous_actions))
 
@@ -83,7 +83,7 @@ class Agent(object):
         action_continuous = action_continuous[0]  # take it back to the correct shape
         return action_continuous, action_discrete
 
-    def eps_greedy_action(self, predict_discrete, current_step, stop_step, max_prob=0.95, min_prob=0.05):
+    def eps_greedy_action(self, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.1):
         explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
         random = np.random.rand()
         if random > explore_threshold:

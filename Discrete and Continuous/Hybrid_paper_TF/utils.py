@@ -2,14 +2,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plotLearning(scores, filename, x=None, window=5):
-    N = len(scores)
-    running_avg = np.empty(N)
-    for t in range(N):
-        running_avg[t] = np.mean(scores[max(0, t - window):(t + 1)])
-    if x is None:
-        x = [i for i in range(N)]
-    plt.ylabel('Score')
-    plt.xlabel('Game')
-    plt.plot(x, running_avg)
-    plt.savefig(filename)
+class Plotter(object):
+    def __init__(self, score_history, episodes):
+        self.score_history = score_history
+        self.episodes = episodes
+
+    def running_mean(self, x, N):
+        cumsum = np.cumsum(np.insert(x, 0, 0))
+        return (cumsum[N:] - cumsum[:-N]) / N
+
+    def plot(self):
+        episodes = np.arange(self.episodes)
+        smoothed_rews = self.running_mean(self.score_history, 100)
+        plt.plot(episodes[-len(smoothed_rews):], smoothed_rews)
+        plt.plot(episodes, self.score_history, color='grey', alpha=0.3)
+        plt.xlabel("steps")
+        plt.ylabel("reward")
+        plt.legend(["avg reward", "reward"])
+        plt.show()
