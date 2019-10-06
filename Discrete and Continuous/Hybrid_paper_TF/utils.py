@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from os import times
 
 
 class Plotter(object):
@@ -11,7 +12,7 @@ class Plotter(object):
         cumsum = np.cumsum(np.insert(x, 0, 0))
         return (cumsum[N:] - cumsum[:-N]) / N
 
-    def plot(self):
+    def plot(self, save=False):
         episodes = np.arange(self.episodes)
         smoothed_rews = self.running_mean(self.score_history, 100)
         plt.plot(episodes[-len(smoothed_rews):], smoothed_rews)
@@ -19,4 +20,6 @@ class Plotter(object):
         plt.xlabel("steps")
         plt.ylabel("reward")
         plt.legend(["avg reward", "reward"])
+        if save is True:
+            plt.savefig("RewardvsSteps_" + str(os.times().user) + ".png")
         plt.show()
