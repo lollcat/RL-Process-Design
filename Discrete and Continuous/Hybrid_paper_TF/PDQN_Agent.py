@@ -86,7 +86,7 @@ class Agent(object):
     def eps_greedy_action(self, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.1):
         explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
         random = np.random.rand()
-        if random > explore_threshold:
+        if random < explore_threshold:
             # paper uses uniform distribution
             # discrete_distribution = np.softmax(predict_discrete)
             action_discrete = np.random.choice(self.n_discrete_actions) #, p=discrete_distribution)
