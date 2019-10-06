@@ -14,22 +14,23 @@ import math
 """In general, without just using a big punishment, 
 how does one limit a NN to make choices that make sense with prior knowledge"""
 
-    
 class Simulator(Env):
-    def __init__(self):
+    def __init__(self, split_option_n=3):
+        # discretised continuous split space
+        self.split_option_n = split_option_n
+        self.split_max = 0.99
+        self.split_min = 0.9
+        self.split_options = np.linspace(self.split_max, self.split_min, num=self.split_option_n)
+
         self.compound_names = ["Ethane", "Propylene", "Propane", "1-butene", "n-butane", "n-pentane"]
         self.initial_state = np.array([9.1, 6.8, 9.1, 6.8, 6.8, 6.8])
-        self.relative_volatility = np.array([3.5, 1.2, 2.7, 1.21, 3.0]) #A/B, B/C etc
-        discrete_action_size = self.initial_state.shape[0] - 1  #action selects LK
-        continuous_action_number = 1 
+        self.relative_volatility = np.array([3.5, 1.2, 2.7, 1.21, 3.0])  # A/B, B/C etc
+        discrete_action_size = (self.initial_state.shape[0] - 1) * self.split_option_n  # action selects LK and split
         self.state = self.initial_state.copy()
         self.max_columns = 10
 
-        #spaces for mixed action space?
         self.discrete_action_space = spaces.Discrete(discrete_action_size)
-        self.continuous_action_space = spaces.Box(low=0.8, high=0.999, shape=(continuous_action_number,))
-        self.observation_space = spaces.Box(low = 0, high = 9.1, shape = self.initial_state.shape)
-        
+        self.observation_space = spaces.Box(low=0, high=9.1, shape=self.initial_state.shape)
         self.total_cost = 0
         self.stream_table = [self.initial_state.copy()]
         self.outlet_streams = []
@@ -39,23 +40,24 @@ class Simulator(Env):
         self.steps = 0
         
         empty = np.zeros(self.initial_state.shape)
+
         def maker(empty, initial_state, i): 
             stream = empty.copy()
             stream[i] = initial_state[i]
             return stream
         self.product_streams = [maker(empty, self.initial_state, i) for i in range(self.initial_state.size)]
         
-    def step(self, action, same_action_punish=True): #note that same_action_punish should get removed as it is a hard coded heuristic
+    def step(self, action, same_action_punish=True):
         reward = 0
-        action_continuous, action_discrete = action
-        LK_split = self.action_continuous_definer(action_continuous)
+        Light_Key = int(action / self.split_option_n)
+        LK_split_number = action % self.split_option_n
+        LK_split = self.split_options[LK_split_number]
         self.split_order.append(LK_split)
-        Light_Key = action_discrete
         self.sep_order.append(Light_Key)
 
         done = False
         self.steps += 1
-        if self.steps > 20: done = True
+        if self.steps > self.max_columns: done = True # TODO add this change to disc_cont environment
         previous_state = self.state.copy()
 
         Heavy_Key = Light_Key + 1
@@ -127,10 +129,4 @@ class Simulator(Env):
             state, reward, done, _ = self.step(action)
             print(f'reward: {reward}, LK: {LK}, LK_split: {LK_split}')
 
-    def action_continuous_definer(self, action_continuous):
-        # agent gives continuous argument between -1 and 1 (width 2)
-        # reformat split agent action * split range / agent action range + (split minimum - agent minimum)
-        LK_Split = self.continuous_action_space.low + (action_continuous - (-1))/2 \
-                   * (self.continuous_action_space.high - self.continuous_action_space.low)
 
-        return LK_Split

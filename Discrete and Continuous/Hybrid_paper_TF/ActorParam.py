@@ -58,11 +58,12 @@ class ActorDPG(object):
             layer2_activation = tf.nn.relu(batch2)
 
             f3 = 0.003
-            mu = tf.layers.dense(layer2_activation, units=self.n_actions,
+            self.mu = tf.layers.dense(layer2_activation, units=self.n_actions,
                                  activation='tanh',
                                  kernel_initializer=random_uniform(-f3, f3),
                                  bias_initializer=random_uniform(-f3, f3))
-            self.mu = tf.multiply(mu, self.action_bound)
+            # environment now takes in action between -1 and 1
+            # self.mu = tf.multiply(mu, self.action_bound)
 
     def predict(self, inputs):
         return self.sess.run(self.mu, feed_dict={self.input: inputs})

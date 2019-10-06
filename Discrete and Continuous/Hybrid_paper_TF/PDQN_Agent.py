@@ -72,7 +72,7 @@ class Agent(object):
         mu = self.actor_DPG.predict(state)  # returns list of list so get 0 ith element later on
         noise = self.noise()
         mu_prime = mu + noise
-        action_continuous = mu_prime  #[0]
+        action_continuous = min(mu_prime, np.array([[0.999]]))  # cannot have a split above 1
         assert action_continuous.shape == (1, 1)  # need this shape to run through actor_DQN
         # TODO this will need to be generalised by adding self.n_continuous_actions
 
