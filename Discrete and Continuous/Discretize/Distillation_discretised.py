@@ -8,11 +8,11 @@ import numpy as np
 from gym import Env, spaces
 import math
 
-
 """Actions: choose LK and LK split""" 
 """HK split has to be less than LK split - how to add constraint?"""
 """In general, without just using a big punishment, 
 how does one limit a NN to make choices that make sense with prior knowledge"""
+
 
 class Simulator(Env):
     def __init__(self, split_option_n=3):
@@ -49,6 +49,8 @@ class Simulator(Env):
         
     def step(self, action, same_action_punish=True):
         reward = 0
+
+        # Get splits and light key values
         Light_Key = int(action / self.split_option_n)
         LK_split_number = action % self.split_option_n
         LK_split = self.split_options[LK_split_number]
@@ -57,54 +59,51 @@ class Simulator(Env):
 
         done = False
         self.steps += 1
-        if self.steps > self.max_columns: done = True # TODO add this change to disc_cont environment
+        if self.steps > self.max_columns:
+            done = True  # TODO add this change to disc_cont environment
         previous_state = self.state.copy()
 
+        # calculate tops and bottoms flows and add to stream table
         Heavy_Key = Light_Key + 1
         HK_split = 1 - LK_split
-        #HK_split = action[2]
         tops = np.zeros(self.initial_state.shape)
-        tops[:Light_Key+1] = self.state[:Light_Key+1]
-        tops[Light_Key] = tops[Light_Key]*LK_split 
+        tops[:Light_Key] = self.state[:Light_Key]
+        tops[Light_Key] = previous_state[Light_Key]*LK_split
         tops[Heavy_Key] = previous_state[Heavy_Key]*HK_split
         bots = previous_state - tops
         LK_D = tops[Light_Key]/sum(tops)
         LK_B = bots[Light_Key]/sum(bots)
-        # Gets error for LK_B sometimes if choice doesn't make sense - resolved below
-        # print(LK_B)
-        if LK_D in [1,0] or LK_B in [1,0] or math.isnan(LK_D) or math.isnan(LK_B): #invalid action (HK LK split doesnt exist)
-            reward = -100 #big punishment, and state etc remain the same
-        else:                #valid action
-            if len(self.sep_order) > self.max_columns: done = True
-            self.stream_table.append(tops)
-            self.stream_table.append(bots)
-            N =  np.log(LK_D/(1-LK_D) * (1-LK_B)/LK_B)/np.log(self.relative_volatility[Light_Key])
-            Cost = abs(N)
-            if math.isnan(Cost): Cost = 100   #check how it's possible that cost can be negative?
-            self.total_cost += N
-            reward += -Cost
+        self.stream_table.append(tops)
+        self.stream_table.append(bots)
 
-            if len(self.sep_order) > 1:
-                if Light_Key == self.sep_order[-2] and same_action_punish: #repeating actions is bad
-                    reward = -100
-                if Light_Key != self.sep_order[-2]: #action can't be a repeat to get reward for making a product stream
-                    #if tops or bottoms are product stream reward +=100
-                    if min(np.sum(abs(self.product_streams - tops), axis=0)) < 0.1:
-                        reward += 50
-                    if min(np.sum(abs(self.product_streams - bots), axis=0)) < 0.1:
-                        reward += 50
-                    
-            """Go to next stream as state, if stream only contains more than 95%wt of a single compound then go to next stream"""
-            self.current_stream +=1
+        if len(self.sep_order) > self.max_columns:
+            done = True
+
+        # calculate number of stages using the fenske equation & give punishment
+        n_stages = np.log(LK_D/(1-LK_D) * (1-LK_B)/LK_B)/np.log(self.relative_volatility[Light_Key])
+        cost = n_stages
+        self.total_cost += cost
+        reward += -cost
+
+        # if tops or bottoms are product stream reward +=10
+        if min(np.sum(abs(self.product_streams - tops), axis=0)) < 0.1:
+            reward += 10
+        if min(np.sum(abs(self.product_streams - bots), axis=0)) < 0.1:
+            reward += 10
+
+        # Go to next stream as state, if stream only contains more than 0.9 wt% of a single compound
+        # then go to next stream
+        self.current_stream += 1
+        self.state = self.stream_table[self.current_stream]
+        while max(np.divide(self.state, self.state.sum())) > 0.9:
+            self.outlet_streams.append(self.state)
+            # reward proportional to stream flow and purity
+            reward += self.state.sum()*max(np.divide(self.state, self.state.sum()))**2
+            if np.array_equal(self.state, self.stream_table[-1]):
+                done = True
+                break
+            self.current_stream += 1
             self.state = self.stream_table[self.current_stream]
-            while max(np.divide(self.state, self.state.sum())) > 0.9:
-                self.outlet_streams.append(self.state)
-                reward += self.state.sum()**2*max(np.divide(self.state,self.state.sum()))**2 #reward proportional to stream flow and purity
-                if np.array_equal(self.state, self.stream_table[-1]):
-                    done = True
-                    break 
-                self.current_stream += 1
-                self.state = self.stream_table[self.current_stream]
         return self.state, reward, done, {}
     
     def reset(self): 
@@ -124,8 +123,8 @@ class Simulator(Env):
     def test_random(self, n_steps=5):
         for i in range(n_steps): 
             LK = np.random.randint(0, self.initial_state.size-1)
-            LK_split = np.random.rand(1)
-            action = np.array([LK, LK_split])
+            LK_split = np.random.choice(self.split_options)
+            action = LK * self.split_option_n + LK_split
             state, reward, done, _ = self.step(action)
             print(f'reward: {reward}, LK: {LK}, LK_split: {LK_split}')
 

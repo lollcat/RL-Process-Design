@@ -46,6 +46,7 @@ class Simulator(Env):
         self.product_streams = [maker(empty, self.initial_state, i) for i in range(self.initial_state.size)]
         
     def step(self, action, same_action_punish=True): #note that same_action_punish should get removed as it is a hard coded heuristic
+        # TODO rewrite this without all the silly constraints
         reward = 0
         action_continuous, action_discrete = action
         LK_split = self.action_continuous_definer(action_continuous)

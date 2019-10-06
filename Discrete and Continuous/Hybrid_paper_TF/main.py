@@ -7,14 +7,14 @@ import matplotlib.pyplot as plt
 
 
 env = Simulator()
-agent = Agent(alpha=0.0001, beta=0.00001, input_dims=env.observation_space.shape, tau=0.001,
-              env=env, batch_size=32, layer1_size=64, layer2_size=32, layer3_size=32,
+agent = Agent(alpha=0.001, beta=0.0001, input_dims=env.observation_space.shape, tau=0.001,
+              env=env, batch_size=32, layer1_size=128, layer2_size=64, layer3_size=32,
               n_discrete_actions=env.discrete_action_space.n, n_continuous_actions=1)
 np.random.seed(0)
 total_eps = 50000
 total_eps_greedy = total_eps/2
 # if there is a saved agent then uncomment below:
-agent.load_models()
+#agent.load_models()
 
 score_history = []
 for i in range(total_eps):
@@ -56,4 +56,4 @@ while done is False: # run an episode
 print(env.sep_order)
 print(env.split_order)
 
-print(agent.actor_DPG.action_bound) # TODO inspect this as well as the continuous action outputs
+print(agent.actor_DPG.action_bound)  # TODO inspect this as well as the continuous action outputs
