@@ -20,7 +20,7 @@ class Simulator(Env):
         self.split_option_n = split_option_n
         self.split_max = 0.99
         self.split_min = 0.9
-        self.split_options = np.linspace(self.split_max, self.split_min, num=self.split_option_n)
+        self.split_options = np.linspace(self.split_min, self.split_max, num=self.split_option_n)
 
         self.compound_names = ["Ethane", "Propylene", "Propane", "1-butene", "n-butane", "n-pentane"]
         self.initial_state = np.array([9.1, 6.8, 9.1, 6.8, 6.8, 6.8])
@@ -127,5 +127,3 @@ class Simulator(Env):
             action = LK * self.split_option_n + LK_split
             state, reward, done, _ = self.step(action)
             print(f'reward: {reward}, LK: {LK}, LK_split: {LK_split}')
-
-

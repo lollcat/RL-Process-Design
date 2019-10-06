@@ -46,13 +46,15 @@ plotter = Plotter(score_history, i)
 plotter.plot()
 done = False
 state = env.reset()
+score = 0
 while done is False: # run an episode
     print(state)
     action = agent.best_action(state)
-    action = action_continuous, action_discrete
+    action_continuous, action_discrete = action
     state, reward, done, info = env.step(action)
+    score += reward
 
-
+print(score)
 print(env.sep_order)
 print(env.split_order)
 
