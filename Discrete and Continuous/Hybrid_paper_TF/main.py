@@ -43,7 +43,7 @@ for i in range(total_eps):
         plotter.plot()
 
 plotter = Plotter(score_history, i)
-plotter.plot()
+plotter.plot(save=True)
 done = False
 state = env.reset()
 score = 0
@@ -57,5 +57,3 @@ while done is False: # run an episode
 print(score)
 print(env.sep_order)
 print(env.split_order)
-
-print(agent.actor_DPG.action_bound)  # TODO inspect this as well as the continuous action outputs
