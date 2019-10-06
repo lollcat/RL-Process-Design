@@ -29,7 +29,7 @@ class Simulator(Env):
         self.state = self.initial_state.copy()
         self.max_columns = 10
 
-        self.discrete_action_space = spaces.Discrete(discrete_action_size)
+        self.action_space = spaces.Discrete(discrete_action_size)
         self.observation_space = spaces.Box(low=0, high=9.1, shape=self.initial_state.shape)
         self.total_cost = 0
         self.stream_table = [self.initial_state.copy()]
