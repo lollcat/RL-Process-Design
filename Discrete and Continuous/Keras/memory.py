@@ -23,6 +23,3 @@ https://github.com/udacity/deep-learning/blob/master/reinforcement/Q-learning-ca
                                size=batch_size,
                                replace=False)
         return [self.buffer[ii] for ii in idx]
-
-
-

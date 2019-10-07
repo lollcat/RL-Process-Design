@@ -38,7 +38,7 @@ class DQN_Agent:
         return model
 
 
-#test = DQN_Agent(0.01, 5, 1, (5,), 'test')
+test = DQN_Agent(0.01, 5, 1, (5,), 'test')
 #plot_model(test.model, to_file='DQNmodel.png', show_shapes=True)
 
 
