@@ -6,9 +6,9 @@ from tensorflow.keras.utils import plot_model
 import os
 
 
-class DQN_Agent():
+class DQN_Agent:
     def __init__(self, lr, n_discrete_actions, n_continuous_actions, state_shape, name, layer1_size=64, layer2_size=32,
-                 layer3_size=32, batch_size=32, chkpt_dir='./tmp/DQN/'):
+                 layer3_size=32):
         self.lr = lr
         self.n_discrete_actions = n_discrete_actions
         self.n_continuous_actions = n_continuous_actions
@@ -16,11 +16,8 @@ class DQN_Agent():
         self.layer1_size = layer1_size
         self.layer2_size = layer2_size
         self.layer3_size = layer3_size
-        self.chkpt_dir = chkpt_dir
         self.state_shape = state_shape
-        self.batch_size = batch_size
         self.model = self.build_network()
-        self.checkpoint_file = os.path.join(chkpt_dir, name +'_ddpg.ckpt')
 
     def build_network(self):
         input_state = Input(shape=self.state_shape, name="input_state")
@@ -41,7 +38,7 @@ class DQN_Agent():
         return model
 
 
-test = DQN_Agent(0.01, 5, 1, (5,), 'test')
-plot_model(test.model, to_file='model.png', show_shapes=True)
+#test = DQN_Agent(0.01, 5, 1, (5,), 'test')
+#plot_model(test.model, to_file='DQNmodel.png', show_shapes=True)
 
 
