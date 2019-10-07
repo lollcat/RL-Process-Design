@@ -29,5 +29,5 @@ class ParameterAgent:
         return model, optimizer
 
 
-test = ParameterAgent(0.01, 5, 1, (5,), 'test')
+test = ParameterAgent(0.01, 5, (5,), 'test')
 plot_model(test.model, to_file='Parameter_model.png', show_shapes=True)
