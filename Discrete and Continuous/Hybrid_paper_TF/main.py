@@ -14,7 +14,7 @@ np.random.seed(0)
 total_eps = 50000
 total_eps_greedy = total_eps/2
 # if there is a saved agent then uncomment below:
-#agent.load_models()
+# agent.load_models()
 
 score_history = []
 for i in range(total_eps):

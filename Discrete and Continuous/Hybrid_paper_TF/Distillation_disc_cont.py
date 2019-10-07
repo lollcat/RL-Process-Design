@@ -79,15 +79,15 @@ class Simulator(Env):
             self.stream_table.append(bots)
             N =  np.log(LK_D/(1-LK_D) * (1-LK_B)/LK_B)/np.log(self.relative_volatility[Light_Key])
             Cost = abs(N)
-            if math.isnan(Cost): Cost = 100   #check how it's possible that cost can be negative?
+            if math.isnan(Cost): Cost = 100   # check how it's possible that cost can be negative?
             self.total_cost += N
             reward += -Cost
 
             if len(self.sep_order) > 1:
-                if Light_Key == self.sep_order[-2] and same_action_punish: #repeating actions is bad
+                if Light_Key == self.sep_order[-2] and same_action_punish: # repeating actions is bad
                     reward = -100
-                if Light_Key != self.sep_order[-2]: #action can't be a repeat to get reward for making a product stream
-                    #if tops or bottoms are product stream reward +=100
+                if Light_Key != self.sep_order[-2]: # action can't be a repeat to get reward for making a product stream
+                    # if tops or bottoms are product stream reward +=100
                     if min(np.sum(abs(self.product_streams - tops), axis=0)) < 0.1:
                         reward += 50
                     if min(np.sum(abs(self.product_streams - bots), axis=0)) < 0.1:
@@ -98,7 +98,7 @@ class Simulator(Env):
             self.state = self.stream_table[self.current_stream]
             while max(np.divide(self.state, self.state.sum())) > 0.9:
                 self.outlet_streams.append(self.state)
-                reward += self.state.sum()**2*max(np.divide(self.state,self.state.sum()))**2 #reward proportional to stream flow and purity
+                reward += self.state.sum()**2*max(np.divide(self.state,self.state.sum()))**2 # reward proportional to stream flow and purity
                 if np.array_equal(self.state, self.stream_table[-1]):
                     done = True
                     break 
