@@ -59,6 +59,8 @@ class Simulator(Env):
         tops[Light_Key] = tops[Light_Key] * LK_split
         tops[Heavy_Key] = previous_state[Heavy_Key] * HK_split
         bots = previous_state - tops
+        self.stream_table.append(tops)
+        self.stream_table.append(bots)
         LK_D = tops[Light_Key] / sum(tops)
         LK_B = bots[Light_Key] / sum(bots)
 

@@ -83,16 +83,17 @@ class Agent:
         action_discrete = np.argmax(predict_discrete)
         return action_continuous, action_discrete
 
-    @tf.function
+   # @tf.function
     def train_param(self, state):
         with tf.GradientTape() as tape:
-            predict_param = self.target_param.predict(state)
-            Qvalues = self.target_dqn.predict([state, predict_param])
-            loss = - reduce_sum(Qvalues, axis=1)
-        # get gradients of loss with respect to the param_model weights
+            #tape.watch(self.param_model.layers)
+            predict_param = self.param_model.predict_on_batch(state)
+            Qvalues = self.target_dqn.predict_on_batch([state, predict_param])
+            loss = - reduce_sum(Qvalues, axis=1, keepdims=True)
+            # get gradients of loss with respect to the param_model weights
         gradient = tape.gradient(loss, self.param_model.trainable_weights)
         self.param_optimizer.apply_gradients(gradient, self.param_model.trainable_weights)
-        return loss, Qvalues
+        return loss
 
     def learn(self):
         if len(self.memory.buffer) < self.batch_size:  # first fill memory
@@ -110,7 +111,8 @@ class Agent:
         # train the continuous variable network on the Q values
         # also the Q values are used again later for training of DQN
         # see tf.function train_param
-        loss_param, Qvalues = self.train_param(state)
+        loss_param = self.train_param(state)
+        Qvalues = self.target_dqn.predict([state, self.target_param.predict(state)])
         Qvalues_next = self.target_dqn.predict([new_state, self.target_param.predict(new_state)])
 
         Q_target = Qvalues.copy()  # just to get shape and make difference 0 for everything that wasn't the taken action

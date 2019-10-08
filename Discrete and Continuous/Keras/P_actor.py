@@ -30,4 +30,4 @@ class ParameterAgent:
 
 
 test = ParameterAgent(0.01, 5, (5,), 'test')
-plot_model(test.model, to_file='Parameter_model.png', show_shapes=True)
+#plot_model(test.model, to_file='Parameter_model.png', show_shapes=True)

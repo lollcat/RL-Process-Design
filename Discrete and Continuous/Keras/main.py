@@ -5,7 +5,8 @@ from DistillationSimulator import Simulator
 
 env = Simulator()
 agent = Agent(alpha=0.0001 , beta=0.001, n_discrete_actions=env.discrete_action_space.n,
-              n_continuous_actions=env.continuous_action_space.shape[0], state_shape=env.observation_space.shape)
+              n_continuous_actions=env.continuous_action_space.shape[0], state_shape=env.observation_space.shape,
+              batch_size=32)
 np.random.seed(0)
 total_eps = 50000
 total_eps_greedy = total_eps/2
