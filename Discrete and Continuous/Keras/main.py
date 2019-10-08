@@ -1,16 +1,15 @@
-from Distillation_disc_cont import Simulator
+from P_DQN_Agent import Agent
 import numpy as np
-from PDQN_Agent import Agent
 from utils import Plotter
-
+from DistillationSimulator import Simulator
 
 env = Simulator()
-agent = Agent(alpha=0.001, beta=0.0001, input_dims=env.observation_space.shape, tau=0.001,
-              env=env, batch_size=32, layer1_size=128, layer2_size=64, layer3_size=32,
-              n_discrete_actions=env.discrete_action_space.n, n_continuous_actions=1)
+agent = Agent(alpha=0.0001 , beta=0.001, n_discrete_actions=env.discrete_action_space.n,
+              n_continuous_actions=env.continuous_action_space.shape[0], state_shape=env.observation_space.shape)
 np.random.seed(0)
 total_eps = 50000
 total_eps_greedy = total_eps/2
+
 # if there is a saved agent then uncomment below:
 # agent.load_models()
 
@@ -36,9 +35,10 @@ for i in range(total_eps):
 
     if i % (total_eps/20) == 0 and i > 100:
         env.render()
-        agent.save_models()
         plotter = Plotter(score_history, i)
         plotter.plot()
+
+agent.save_models()
 
 plotter = Plotter(score_history, i)
 plotter.plot(save=True)

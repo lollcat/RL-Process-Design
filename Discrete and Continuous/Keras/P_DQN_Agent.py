@@ -1,5 +1,5 @@
 import tensorflow as tf
-from tensorflow.keras.models import clone_model
+from tensorflow.keras.models import clone_model, load_model
 from tensorflow import reduce_sum
 import numpy as np
 
@@ -10,8 +10,8 @@ from P_actor import ParameterAgent
 
 
 
-class PDQN_Agent:
-    def __init__(self, alpha, beta, batch_size, n_discrete_actions, n_continuous_actions, state_shape, tau,
+class Agent:
+    def __init__(self, alpha, beta, n_discrete_actions, n_continuous_actions, state_shape, tau=0.001, batch_size=32,
                  gamma=0.99, max_size=10000, layer1_size=64, layer2_size=32, layer3_size=32):
         self.batch_size = batch_size
         self.n_discrete_actions = n_discrete_actions
@@ -58,7 +58,7 @@ class PDQN_Agent:
         # TODO this will need to be generalised by adding self.n_continuous_actions
 
         # get discrete action
-        predict_discrete = self.dqn_model.predict(state, action_continuous)
+        predict_discrete = self.dqn_model.predict([state, action_continuous])
         action_discrete = self.eps_greedy_action(predict_discrete, current_step, stop_step)
 
         action_continuous = action_continuous[0]  # take it back to the correct shape
@@ -87,7 +87,7 @@ class PDQN_Agent:
     def train_param(self, state):
         with tf.GradientTape() as tape:
             predict_param = self.target_param.predict(state)
-            Qvalues = self.target_dqn.predict(state, predict_param)
+            Qvalues = self.target_dqn.predict([state, predict_param])
             loss = - reduce_sum(Qvalues, axis=1)
         # get gradients of loss with respect to the param_model weights
         gradient = tape.gradient(loss, self.param_model.trainable_weights)
@@ -111,7 +111,7 @@ class PDQN_Agent:
         # also the Q values are used again later for training of DQN
         # see tf.function train_param
         loss_param, Qvalues = self.train_param(state)
-        Qvalues_next = self.target_dqn.predict(new_state, self.target_param.predict(new_state))
+        Qvalues_next = self.target_dqn.predict([new_state, self.target_param.predict(new_state)])
 
         Q_target = Qvalues.copy()  # just to get shape and make difference 0 for everything that wasn't the taken action
         batch_index = np.arange(self.batch_size, dtype=np.int32)
@@ -119,7 +119,17 @@ class PDQN_Agent:
         # done is 1 - done flag from environment
         assert Q_target.shape == (self.batch_size, self.n_discrete_actions), "Q target wrong shape"
 
-        #now train dqn model
+        # now train dqn model
         _ = self.dqn_model.train_on_batch(state, action_continuous, Q_target)
 
-test = PDQN_Agent(alpha, beta, batch_size, n_discrete_actions, n_continuous_actions, state_shape, tau)
+    def save_models(self):
+        self.param_model.save("param_model.h5")
+        self.dqn_model.save("dqn_model.h5")
+        self.target_param.save("target_param.h5")
+        self.target_dqn.save("target_dqnv.h5")
+
+    def load_models(self):
+        self.param_model = load_model("param_model.h5")
+        self.dqn_model = load_model("dqn_model.h5")
+        self.target_param = load_model("target_param.h5")
+        self.target_dqn = load_model("target_dqnv.h5")
