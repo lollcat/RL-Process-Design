@@ -28,18 +28,36 @@ class Agent:
         self.target_dqn = clone_model(self.dqn_model)
         self.target_param = clone_model(self.param_model)
 
-        self.update_actorDQN = \
+        self.noise = OUActionNoise(mu=np.zeros(n_continuous_actions))
+
+        self.update_network_parameters(first=True)
+
+    def update_network_parameters(self, first=False):
+        if first:
+            old_tau = self.tau
+            self.tau = 1.0
+
             [self.target_dqn.trainable_weights[i].assign(
                 tf.multiply(self.dqn_model.trainable_weights[i], self.tau)
-                + tf.multiply(self.target_dqn.trainable_weights[i], 1-self.tau))
-             for i in range(len(self.target_dqn.trainable_weights))]
-        self.update_actorParam = \
+                + tf.multiply(self.target_dqn.trainable_weights[i], 1 - self.tau))
+                for i in range(len(self.target_dqn.trainable_weights))]
+
             [self.target_param.trainable_weights[i].assign(
                 tf.multiply(self.param_model.trainable_weights[i], self.tau)
-                + tf.multiply(self.target_param.trainable_weights[i], 1-self.tau))
-             for i in range(len(self.target_param.trainable_weights))]
+                + tf.multiply(self.target_param.trainable_weights[i], 1 - self.tau))
+                for i in range(len(self.target_param.trainable_weights))]
 
-        self.noise = OUActionNoise(mu=np.zeros(n_continuous_actions))
+            self.tau = old_tau
+        else:
+            [self.target_dqn.trainable_weights[i].assign(
+                tf.multiply(self.dqn_model.trainable_weights[i], self.tau)
+                + tf.multiply(self.target_dqn.trainable_weights[i], 1 - self.tau))
+                for i in range(len(self.target_dqn.trainable_weights))]
+
+            [self.target_param.trainable_weights[i].assign(
+                tf.multiply(self.param_model.trainable_weights[i], self.tau)
+                + tf.multiply(self.target_param.trainable_weights[i], 1 - self.tau))
+                for i in range(len(self.target_param.trainable_weights))]
 
     def remember(self, state, action_continuous, action_discrete, reward, new_state, done):
         done = 1 - done
@@ -81,7 +99,7 @@ class Agent:
         action_discrete = np.argmax(predict_discrete)
         return action_continuous, action_discrete
 
-   # @tf.function
+    @tf.function
     def train_param(self, state):
         with tf.GradientTape() as tape:
             predict_param = self.param_model(state)
@@ -120,6 +138,8 @@ class Agent:
 
         # now train dqn model
         _ = self.dqn_model.train_on_batch([state, action_continuous], Q_target)
+
+        self.update_network_parameters()
 
     def save_models(self):
         self.param_model.save("param_model.h5")

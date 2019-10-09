@@ -1,7 +1,10 @@
+from tensorflow.keras.backend import set_floatx
+set_floatx('float64')
 from P_DQN_Agent import Agent
 import numpy as np
 from utils import Plotter
 from DistillationSimulator import Simulator
+import time
 
 env = Simulator()
 agent = Agent(alpha=0.0001 , beta=0.001, n_discrete_actions=env.discrete_action_space.n,
@@ -15,6 +18,7 @@ total_eps_greedy = total_eps/2
 # agent.load_models()
 
 score_history = []
+start_time = time.time()
 for i in range(total_eps):
     state = env.reset()
     done = False
@@ -33,11 +37,19 @@ for i in range(total_eps):
     if i % 100 == 0:
         print('episode ', i, 'score %.2f' % score,
           'trailing 100 games avg %.3f' % np.mean(score_history[-100:]))
+        elapsed_time = (time.time() - start_time)/60
+        print(f'elapsed_time is {elapsed_time/60} min \n')
+        time_left = (total_eps - i)/(i+1) * elapsed_time
+        print(f'estimated time to go is {time_left/60} hr \n')
 
     if i % (total_eps/20) == 0 and i > 100:
         env.render()
         plotter = Plotter(score_history, i)
         plotter.plot()
+        elapsed_time = time.time() - start_time
+        print(f'elapsed_time is {elapsed_time} \n')
+        time_left = (total_eps - i)/i * elapsed_time
+        print(f'estimated time to go is {time_left} \n')
 
 agent.save_models()
 
