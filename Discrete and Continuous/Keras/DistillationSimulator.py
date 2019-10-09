@@ -89,6 +89,9 @@ class Simulator(Env):
                 break
             self.current_stream += 1
             self.state = self.stream_table[self.current_stream]
+
+        if np.isnan(reward) or np.isinf(reward):
+            reward = -50
         return self.state, reward, done, {}
 
     def reset(self):

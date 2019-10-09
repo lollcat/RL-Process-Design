@@ -85,12 +85,12 @@ class Agent:
     def train_param(self, state):
         with tf.GradientTape() as tape:
             #tape.watch(self.param_model.layers)
-            predict_param = self.param_model.predict_on_batch(state)
-            Qvalues = self.target_dqn.predict_on_batch([state, predict_param])
+            predict_param = self.param_model(state)
+            Qvalues = self.target_dqn([state, predict_param])
             loss = - reduce_sum(Qvalues, axis=1, keepdims=True)
             # get gradients of loss with respect to the param_model weights
-        gradient = tape.gradient(loss, self.param_model.trainable_weights)
-        self.param_optimizer.apply_gradients(gradient, self.param_model.trainable_weights)
+        gradients = tape.gradient(loss, self.param_model.trainable_weights)
+        self.param_optimizer.apply_gradients(zip(gradients, self.param_model.trainable_weights))
         return loss
 
     def learn(self):
@@ -120,7 +120,7 @@ class Agent:
         assert Q_target.shape == (self.batch_size, self.n_discrete_actions), "Q target wrong shape"
 
         # now train dqn model
-        _ = self.dqn_model.train_on_batch(state, action_continuous, Q_target)
+        _ = self.dqn_model.train_on_batch([state, action_continuous], Q_target)
 
     def save_models(self):
         self.param_model.save("param_model.h5")
