@@ -2,6 +2,7 @@ from Distillation_disc_cont import Simulator
 import numpy as np
 from PDQN_Agent import Agent
 from utils import Plotter
+import time
 
 
 env = Simulator()
@@ -15,6 +16,7 @@ total_eps_greedy = total_eps/2
 # agent.load_models()
 
 score_history = []
+start_time = time.time()
 for i in range(total_eps):
     state = env.reset()
     done = False
@@ -33,12 +35,22 @@ for i in range(total_eps):
     if i % 100 == 0:
         print('episode ', i, 'score %.2f' % score,
           'trailing 100 games avg %.3f' % np.mean(score_history[-100:]))
+        """
+        elapsed_time = (time.time() - start_time)/60
+        print(f'elapsed_time is {elapsed_time} min \n')
+        time_left = (total_eps - i)/(i+1) * elapsed_time
+        print(f'estimated time to go is {time_left/60} hr \n')
+        """
 
     if i % (total_eps/20) == 0 and i > 100:
         env.render()
         agent.save_models()
         plotter = Plotter(score_history, i)
         plotter.plot()
+        elapsed_time = (time.time() - start_time)/60
+        print(f'elapsed_time is {elapsed_time} min \n')
+        time_left = (total_eps - i)/(i+1) * elapsed_time
+        print(f'estimated time to go is {time_left/60} hr \n')
 
 plotter = Plotter(score_history, i)
 plotter.plot(save=True)

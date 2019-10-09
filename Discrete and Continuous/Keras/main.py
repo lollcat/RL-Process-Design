@@ -11,7 +11,7 @@ agent = Agent(alpha=0.0001 , beta=0.001, n_discrete_actions=env.discrete_action_
               n_continuous_actions=env.continuous_action_space.shape[0], state_shape=env.observation_space.shape,
               batch_size=32)
 np.random.seed(0)
-total_eps = 50000
+total_eps = 20000
 total_eps_greedy = total_eps/2
 
 # if there is a saved agent then uncomment below:
@@ -38,7 +38,7 @@ for i in range(total_eps):
         print('episode ', i, 'score %.2f' % score,
           'trailing 100 games avg %.3f' % np.mean(score_history[-100:]))
         elapsed_time = (time.time() - start_time)/60
-        print(f'elapsed_time is {elapsed_time/60} min \n')
+        print(f'elapsed_time is {elapsed_time} min \n')
         time_left = (total_eps - i)/(i+1) * elapsed_time
         print(f'estimated time to go is {time_left/60} hr \n')
 
