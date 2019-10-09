@@ -84,7 +84,6 @@ class Agent:
    # @tf.function
     def train_param(self, state):
         with tf.GradientTape() as tape:
-            #tape.watch(self.param_model.layers)
             predict_param = self.param_model(state)
             Qvalues = self.target_dqn([state, predict_param])
             loss = - reduce_sum(Qvalues, axis=1, keepdims=True)
