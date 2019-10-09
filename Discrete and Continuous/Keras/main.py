@@ -21,7 +21,7 @@ for i in range(total_eps):
     score = 0
     while not done:
         action = agent.choose_action(state, i, total_eps_greedy)
-        action_continuous, action_discrete = action  # TODO continuous action range is wrong
+        action_continuous, action_discrete = action
         new_state, reward, done, info = env.step(action)
         agent.remember(state, action_continuous, action_discrete, reward, new_state, int(done))
         agent.learn()
