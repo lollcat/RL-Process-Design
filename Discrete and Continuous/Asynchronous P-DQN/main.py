@@ -15,7 +15,7 @@ total_eps = 2000
 total_eps_greedy = total_eps/2
 
 # if there is a saved agent then uncomment below:
-agent.load_models()
+# agent.load_models()
 
 score_history = []
 start_time = time.time()
