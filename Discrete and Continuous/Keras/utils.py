@@ -17,7 +17,7 @@ class Plotter(object):
         smoothed_rews = self.running_mean(self.score_history, 100)
         plt.plot(episodes[-len(smoothed_rews):], smoothed_rews)
         plt.plot(episodes, self.score_history, color='grey', alpha=0.3)
-        plt.xlabel("steps")
+        plt.xlabel("episodes")
         plt.ylabel("reward")
         plt.legend(["avg reward", "reward"])
         if save is True:

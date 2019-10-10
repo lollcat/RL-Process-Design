@@ -95,7 +95,7 @@ class Agent:
     def best_action(self, state):
         state = state[np.newaxis, :]
         action_continuous = self.param_model.predict(state)
-        predict_discrete = self.dqn_model.predict(state, action_continuous)
+        predict_discrete = self.dqn_model.predict([state, action_continuous])
         action_discrete = np.argmax(predict_discrete)
         return action_continuous, action_discrete
 
