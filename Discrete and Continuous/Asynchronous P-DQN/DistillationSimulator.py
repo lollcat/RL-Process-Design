@@ -1,6 +1,5 @@
 import numpy as np
 from gym import Env, spaces
-import math
 
 
 class Simulator(Env):
@@ -128,3 +127,5 @@ class Simulator(Env):
         LK_Split = self.continuous_action_space.low + (action_continuous - (-1)) / 2 \
                    * (self.continuous_action_space.high - self.continuous_action_space.low)
         return LK_Split
+
+env = Simulator()

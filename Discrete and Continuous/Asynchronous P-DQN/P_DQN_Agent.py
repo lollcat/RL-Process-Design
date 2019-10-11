@@ -110,6 +110,7 @@ class Agent:
         self.param_optimizer.apply_gradients(zip(gradients, self.param_model.trainable_weights))
         return loss
 
+    @tf.function
     def learn(self):
         if len(self.memory.buffer) < self.batch_size:  # first fill memory
             return

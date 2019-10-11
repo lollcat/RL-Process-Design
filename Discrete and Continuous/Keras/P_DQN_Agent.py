@@ -99,7 +99,7 @@ class Agent:
         action_discrete = np.argmax(predict_discrete)
         return action_continuous, action_discrete
 
-    @tf.function
+
     def train_param(self, state):
         with tf.GradientTape() as tape:
             predict_param = self.param_model(state)
@@ -110,6 +110,7 @@ class Agent:
         self.param_optimizer.apply_gradients(zip(gradients, self.param_model.trainable_weights))
         return loss
 
+    @tf.function
     def learn(self):
         if len(self.memory.buffer) < self.batch_size:  # first fill memory
             return

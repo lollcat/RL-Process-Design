@@ -1,70 +1,73 @@
+# https://www.udemy.com/course/deep-reinforcement-learning-in-python
+
 from tensorflow.keras.backend import set_floatx
 set_floatx('float64')
-from P_DQN_Agent import Agent
 import numpy as np
 from utils import Plotter
 from DistillationSimulator import Simulator
-import time
+import multiprocessing
+import threading
+import itertools
+from P_actor import ParameterAgent
+import tensorflow as tf
 
+"""
+KEY INPUTS
+"""
+alpha = 0.0001
+beta = 0.001
 env = Simulator()
-agent = Agent(alpha=0.0001 , beta=0.001, n_discrete_actions=env.discrete_action_space.n,
-              n_continuous_actions=env.continuous_action_space.shape[0], state_shape=env.observation_space.shape,
-              batch_size=32)
-np.random.seed(0)
-total_eps = 2000
-total_eps_greedy = total_eps/2
+n_continuous_actions = env.continuous_action_space.shape[0]
+n_discrete_actions = env.discrete_action_space.n
+state_shape = env.observation_space.shape
+layer1_size = 64
+layer2_size = 32
+layer3_size = 32
+max_global_steps = 1000
+steps_per_update = 5
+num_workers = multiprocessing.cpu_count
 
-# if there is a saved agent then uncomment below:
-# agent.load_models()
+global_counter = itertools.count
+returns_list = []
 
-score_history = []
-start_time = time.time()
-for i in range(total_eps):
-    state = env.reset()
-    done = False
-    score = 0
-    while not done:
-        action = agent.choose_action(state, i, total_eps_greedy)
-        action_continuous, action_discrete = action
-        new_state, reward, done, info = env.step(action)
-        agent.remember(state, action_continuous, action_discrete, reward, new_state, int(done))
-        agent.learn()
-        score += reward
-        state = new_state
-        # env.render()
+# Build Models
+param_model, param_optimizer = ParameterAgent(beta, n_continuous_actions, state_shape,
+                                                                "Param_model", layer1_size=layer1_size,
+                                                                layer2_size=layer2_size).build_network()
+dqn_model = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
+                           layer1_size, layer2_size, layer3_size).build_network()
 
-    score_history.append(score)
-    if i % 100 == 0:
-        print('episode ', i, 'score %.2f' % score,
-          'trailing 100 games avg %.3f' % np.mean(score_history[-100:]))
-        elapsed_time = (time.time() - start_time)/60
-        print(f'elapsed_time is {elapsed_time} min \n')
-        time_left = (total_eps - i)/(i+1) * elapsed_time
-        print(f'estimated time to go is {time_left/60} hr \n')
+# Create Workers
+workers = []
+for worker_id in range(num_workers)
+    worker = Worker(
+        name = f'worker {worker_id}',
+        env = Simulator()
+        param_model = param_model,
+        param_optimizer  = param_optimizer
+        dqn_model = dqn_model,
+        global_counter = global_counter
+        returns_list = returns_list # note this is a global variable that all the workers have access to
+        discount_rate = 0.99
+        max_global_steps = max_global_steps,
+    )
+    workers.append(worker)
 
-    if i % (total_eps/20) == 0 and i > 100:
-        env.render()
-        plotter = Plotter(score_history, i)
-        plotter.plot()
-        elapsed_time = (time.time() - start_time) / 60
-        print(f'elapsed_time is {elapsed_time} min \n')
-        time_left = (total_eps - i) / (i + 1) * elapsed_time
-        print(f'estimated time to go is {time_left / 60} hr \n')
+coord = tf.train.Coordinator()
+# where to put @tf.function?
+worker threads = []
+for worker in workers
+    worker_fn = lambda: worker.run(coord, steps_per_update)
+    t = threading.Thread(target=worker_fn)
+    t.start()
+    worker_threads.append(t)
 
-agent.save_models()
+coord.join(worker_threads, stop_grace_period_secs=300)
 
-plotter = Plotter(score_history, total_eps)
-plotter.plot(save=True)
-done = False
-state = env.reset()
-score = 0
-while done is False: # run an episode
-    print(state)
-    action = agent.best_action(state)
-    action_continuous, action_discrete = action
-    state, reward, done, info = env.step(action)
-    score += reward
 
-print(score)
-print(env.sep_order)
-print(env.split_order)
+
+
+
+
+
+
