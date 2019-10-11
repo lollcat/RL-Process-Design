@@ -7,11 +7,11 @@ from DistillationSimulator import Simulator
 import time
 
 env = Simulator()
-agent = Agent(alpha=0.0001 , beta=0.001, n_discrete_actions=env.discrete_action_space.n,
+agent = Agent(alpha=0.0001, beta=0.001, n_discrete_actions=env.discrete_action_space.n,
               n_continuous_actions=env.continuous_action_space.shape[0], state_shape=env.observation_space.shape,
               batch_size=32)
 np.random.seed(0)
-total_eps = 2000
+total_eps = 1000
 total_eps_greedy = total_eps/2
 
 # if there is a saved agent then uncomment below:
@@ -53,7 +53,7 @@ for i in range(total_eps):
 
 agent.save_models()
 
-plotter = Plotter(score_history, total_eps)
+plotter = Plotter(score_history, total_eps-1)
 plotter.plot(save=True)
 done = False
 state = env.reset()
