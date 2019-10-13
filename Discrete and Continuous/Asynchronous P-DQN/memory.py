@@ -7,12 +7,12 @@ from collections import deque
 import numpy as np
 
 
-class ReplayBuffer:
+class Memory:
     """
 Taken from
 https://github.com/udacity/deep-learning/blob/master/reinforcement/Q-learning-cart.ipynb
 """
-    def __init__(self, max_size=10000):
+    def __init__(self, max_size=100):
         self.buffer = deque(maxlen=max_size)
 
     def add(self, experience):

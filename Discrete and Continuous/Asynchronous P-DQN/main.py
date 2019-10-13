@@ -39,24 +39,22 @@ dqn_model = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_sha
 
 # Create Workers
 workers = []
-for worker_id in range(num_workers)
+for worker_id in range(num_workers):
     worker = Worker(
-        name = f'worker {worker_id}',
-        env = Simulator()
-        param_model = param_model,
-        param_optimizer  = param_optimizer
-        dqn_model = dqn_model,
-        global_counter = global_counter
-        returns_list = returns_list # note this is a global variable that all the workers have access to
-        discount_rate = 0.99
-        max_global_steps = max_global_steps,
-    )
+        name=f'worker {worker_id}',
+        param_model=param_model,
+        dqn_model=dqn_model,
+        param_optimizer=param_optimizer,
+        dqn_optimizer=dqn_optimizer,
+        global_counter=global_counter,
+        env=Simulator(),
+        max_global_steps=max_global_steps)
     workers.append(worker)
 
 coord = tf.train.Coordinator()
 # where to put @tf.function?
-worker threads = []
-for worker in workers
+worker_threads = []
+for worker in workers:
     worker_fn = lambda: worker.run(coord, steps_per_update)
     t = threading.Thread(target=worker_fn)
     t.start()
