@@ -2,7 +2,7 @@ import numpy as np
 from gym import Env, spaces
 
 
-class Simulator(Env):
+class Simulator:
     def __init__(self):
         self.compound_names = ["Ethane", "Propylene", "Propane", "1-butene", "n-butane", "n-pentane"]
         self.initial_state = np.array([9.1, 6.8, 9.1, 6.8, 6.8, 6.8])

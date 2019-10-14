@@ -18,7 +18,6 @@ class Agent:
         self.tau = tau
         self.gamma = gamma
         self.memory = ReplayBuffer(max_size)
-        self.noise = OUActionNoise(mu=np.zeros(n_continuous_actions))
 
         self.dqn_model = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
                                    layer1_size, layer2_size, layer3_size).build_network()
@@ -28,23 +27,37 @@ class Agent:
 
         self.target_dqn = clone_model(self.dqn_model)
         self.target_param = clone_model(self.param_model)
-        [self.target_dqn.trainable_weights[i].assign(
-            self.dqn_model.trainable_weights[i])
-            for i in range(len(self.target_dqn.trainable_weights))]
-        [self.target_param.traiable_weights[i].assign(
-            self.param_model.trainable_weights[i])
-            for i in range(len(self.target_param.trainable_weights))]
 
-    def update_network_parameters(self):
-        [self.target_dqn.trainable_weights[i].assign(
-            tf.multiply(self.dqn_model.trainable_weights[i], self.tau)
-            + tf.multiply(self.target_dqn.trainable_weights[i], 1 - self.tau))
-            for i in range(len(self.target_dqn.trainable_weights))]
+        self.noise = OUActionNoise(mu=np.zeros(n_continuous_actions))
 
-        [self.target_param.trainable_weights[i].assign(
-            tf.multiply(self.param_model.trainable_weights[i], self.tau)
-            + tf.multiply(self.target_param.trainable_weights[i], 1 - self.tau))
-            for i in range(len(self.target_param.trainable_weights))]
+        self.update_network_parameters(first=True)
+
+    def update_network_parameters(self, first=False):
+        if first:
+            old_tau = self.tau
+            self.tau = 1.0
+
+            [self.target_dqn.trainable_weights[i].assign(
+                tf.multiply(self.dqn_model.trainable_weights[i], self.tau)
+                + tf.multiply(self.target_dqn.trainable_weights[i], 1 - self.tau))
+                for i in range(len(self.target_dqn.trainable_weights))]
+
+            [self.target_param.trainable_weights[i].assign(
+                tf.multiply(self.param_model.trainable_weights[i], self.tau)
+                + tf.multiply(self.target_param.trainable_weights[i], 1 - self.tau))
+                for i in range(len(self.target_param.trainable_weights))]
+
+            self.tau = old_tau
+        else:
+            [self.target_dqn.trainable_weights[i].assign(
+                tf.multiply(self.dqn_model.trainable_weights[i], self.tau)
+                + tf.multiply(self.target_dqn.trainable_weights[i], 1 - self.tau))
+                for i in range(len(self.target_dqn.trainable_weights))]
+
+            [self.target_param.trainable_weights[i].assign(
+                tf.multiply(self.param_model.trainable_weights[i], self.tau)
+                + tf.multiply(self.target_param.trainable_weights[i], 1 - self.tau))
+                for i in range(len(self.target_param.trainable_weights))]
 
     def remember(self, state, action_continuous, action_discrete, reward, new_state, done):
         done = 1 - done
@@ -86,7 +99,7 @@ class Agent:
         action_discrete = np.argmax(predict_discrete)
         return action_continuous, action_discrete
 
-    @tf.function
+
     def train_param(self, state):
         with tf.GradientTape() as tape:
             predict_param = self.param_model(state)

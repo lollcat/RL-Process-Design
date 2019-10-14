@@ -1,7 +1,7 @@
 
 from tensorflow.keras.layers import Dense, Input, Concatenate, Flatten
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import RMSprop
 from tensorflow.keras.utils import plot_model
 
 
@@ -24,7 +24,7 @@ class ParameterAgent:
         output = Dense(self.n_continuous_actions, activation='tanh', name="output")(dense2)
 
         model = Model(inputs=input_state, outputs=output)
-        optimizer = SGD(lr=self.lr, decay=1e-6)
+        optimizer = RMSprop(lr=self.lr, decay=1e-6)
 
         return model, optimizer
 

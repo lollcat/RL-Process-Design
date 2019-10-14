@@ -1,9 +1,7 @@
 
 from tensorflow.keras.layers import Dense, Input, Concatenate, Flatten
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import SGD
-from tensorflow.keras.utils import plot_model
-import os
+from tensorflow.keras.optimizers import RMSprop
 
 
 class DQN_Agent:
@@ -33,12 +31,11 @@ class DQN_Agent:
         output = Dense(self.n_discrete_actions, activation='linear', name ="output")(dense3)
 
         model = Model(inputs=[input_state, input_parameters], outputs=output)
-        sgd = SGD(lr=self.lr, decay=1e-6)
-        model.compile(loss='mse', optimizer=sgd)
-        return model
+        optimizer = RMSprop(lr=self.lr, decay=1e-6)
+        return model, optimizer
 
 
-test = DQN_Agent(0.01, 5, 1, (5,), 'test')
+#test = DQN_Agent(0.01, 5, 1, (5,), 'test')
 #plot_model(test.model, to_file='DQNmodel.png', show_shapes=True)
 
 

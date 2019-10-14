@@ -1,7 +1,8 @@
-from DQN import DQN_Agent
-from P_actor import ParameterAgent
 import numpy as np
-import tensorflow as ft
+import tensorflow as tf
+from OrnsteinNoise import OUActionNoise
+from tensorflow.keras.models import clone_model
+import time
 
 
 class Step:  # Stores a step
@@ -9,38 +10,48 @@ class Step:  # Stores a step
         self.state = state
         self.action_continuous = action_continuous
         self.action_discrete = action_discrete
-        self.reward  = reward
+        self.reward = reward
         self.next_state = next_state
         self.done = done
 
 
 
-def Worker:
-    def __init__(self, name, global_network_P, global_network_dqn, global_counter,
-                 env, max_global_steps, n_steps=20, gamma=0.99):
+class Worker:
+    def __init__(self, name, global_network_P, global_network_dqn, global_optimizer_P, global_optimizer_dqn,
+                 global_counter, env, max_global_steps, returns_list, n_steps=10, gamma=0.99):
         self.name = name
         self.global_network_P = global_network_P
         self.global_network_dqn = global_network_dqn
-        self.global_optimizer_P =
-        self.global_optimizer_dqn =
+        self.global_optimizer_P = global_optimizer_P
+        self.global_optimizer_dqn = global_optimizer_dqn
         self.global_counter = global_counter
         self.env = env
+        self.state = self.env.reset()
+        self.max_global_steps = max_global_steps
+        self.global_step = 0
+        self.returns_list = returns_list
         self.n_steps = n_steps
         self.gamma = gamma
-        self.local_param_model= global_network_P.copy()
-        self.local_dqn_model= global_network_dqn.copy()
+        self.noise = OUActionNoise(mu=np.zeros(env.continuous_action_space.shape[0]))
+        self.n_discrete_actions = env.discrete_action_space.n
+        self.start_time = time.time()
+
+        self.local_param_model = clone_model(global_network_P)
+        self.local_param_model.set_weights(global_network_P.get_weights())
+        self.local_dqn_model = clone_model(global_network_dqn)
+        self.local_dqn_model.set_weights(global_network_dqn.get_weights())
 
     def run(self, coord):
         try:
             while not coord.should_stop():
                 # Collect some experience
-                experience, global_step = self.run_n_steps()
+                experience = self.run_n_steps()
 
                 # Update the global networks using local gradients
                 self.update_global_parameters(experience)
 
                 # Stop once the max number of global steps has been reached
-                if self.max_global_steps is not None and global_step >= self.max_global_steps:
+                if self.max_global_steps is not None and self.global_step >= self.max_global_steps:
                     coord.request_stop()
                     return
         except tf.errors.CancelledError:
@@ -57,7 +68,7 @@ def Worker:
         # TODO this will need to be generalised by adding self.n_continuous_actions
 
         # get discrete action
-        predict_discrete = self.loal_dqn_model.predict([state, action_continuous])
+        predict_discrete = self.local_dqn_model.predict([state, action_continuous])
         action_discrete = self.eps_greedy_action(predict_discrete, current_step, stop_step)
 
         action_continuous = action_continuous[0]  # take it back to the correct shape
@@ -76,36 +87,44 @@ def Worker:
 
     def run_n_steps(self):
         experience = []
-        for _ in range(self.n_steps)
-            state = env.reset()
-            action = self.choose_action(state, 1, 2) # TODO need to edit eps greedy - these are currently filler values
+        score = 0
+        self.state = self.env.reset()
+        for _ in range(self.n_steps):
+            action = self.choose_action(self.state, self.global_step, self.max_global_steps)
             action_continuous, action_discrete = action
-            next_state, reward, done, info = env.step(action)
-            step = Step(state, action, reward, next_state, done)
+            next_state, reward, done, info = self.env.step(action)
+            step = Step(self.state, action_continuous, action_discrete, reward, next_state, done)
             experience.append(step)
             score += reward
-            state = next_state
-
-            global_step = next(self.global_counter)
+            self.state = next_state
+            self.global_step = next(self.global_counter)
             if done:
+                self.returns_list.append(score)
+                print(f"Score is {score}")
                 break
-        return steps, global_step
+
+            if self.max_global_steps/20 % (self.global_step+1) == 0:
+                print(f'global counter: self.global_counter \n')
+                elapsed_time = time.time() - self.start_time
+                remaining_time = elapsed_time * (self.max_global_steps - self.global_step) / max(self.global_step, 1)
+                print(f'elapsed time: {elapsed_time / 60} min \n remaining time {remaining_time / 60} min \n')
+        return experience
 
     def update_global_parameters(self, experience):
-        reward = 0
+        target = 0
         accumulated_param_gradients = 0
         accumulated_dqn_gradients = 0
-        if not steps[-1].done:
-            state = steps[-1].state[np.newaxis, :]
+        if not experience[-1].done:
+            state = experience[-1].state[np.newaxis, :]
             action_continuous_predict = self.local_param_model.predict(state)
-            target = self.local_dqn_model.predict([state, action_continuous_predict])
-        for step in reversed(steps):
-            target = step.reward + self.gamma * reward
+            target = np.max(self.local_dqn_model.predict([state, action_continuous_predict]))
+        for step in reversed(experience):
+            target = step.reward + self.gamma * target
             state = step.state[np.newaxis, :]
             with tf.GradientTape(persistent=True) as tape:
                 predict_param = self.local_param_model(state)
                 Qvalues = self.local_dqn_model([state, predict_param])
-                Qvalue = Qvalues[step.action_discrete]
+                Qvalue = Qvalues[:, step.action_discrete]
                 loss_param = - tf.reduce_sum(Qvalues)
                 loss_dqn = (Qvalue - target)**2
                 # get gradients of loss with respect to the param_model weights
@@ -119,15 +138,18 @@ def Worker:
                                                for i in range(len(gradient_param))]
                 accumulated_dqn_gradients = [tf.add(accumulated_dqn_gradients[i], gradient_dqn[i])
                                                for i in range(len(gradient_dqn))]
-        #update global nets
+        # update global nets
         self.global_optimizer_P.apply_gradients(zip(accumulated_param_gradients,
                                                     self.global_network_P.trainable_weights))
         self.global_optimizer_dqn.apply_gradients(zip(accumulated_dqn_gradients,
                                                     self.global_network_dqn.trainable_weights))
-        #update local nets
+        # update local nets
         self.local_param_model.set_weights(self.global_network_P.get_weights())
         self.local_dqn_model.set_weights(self.global_network_dqn.get_weights())
-    return
+
+
+
+
 
 
 

@@ -1,43 +1,61 @@
-import itertools
-import threading
-import time
-import multiprocessing
+#from __future__ import absolute_import, division, print_function, unicode_literals
+
+import tensorflow as tf
+gpus = tf.config.experimental.list_physical_devices('GPU')
+tf.config.experimental.set_virtual_device_configuration(gpus[0], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=1024)])
+#tf.debugging.set_log_device_placement(True)
+#print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
+
+from tensorflow.keras.backend import set_floatx
+set_floatx('float64')
 import numpy as np
+from utils import Plotter
+from DistillationSimulator import Simulator
+import multiprocessing
+import threading
+import itertools
+from P_actor import ParameterAgent
+from DQN import DQN_Agent
+from Worker import Worker
 
 
-class Worker:
-  def __init__(self, id_, global_counter):
-    self.id = id_
-    self.global_counter = global_counter
-    self.local_counter = itertools.count()
 
-  def run(self):
-    while True:
-      time.sleep(np.random.rand()*2)  # sleep for a random amount of time
-      global_step = next(self.global_counter)
-      local_step = next(self.local_counter)
-      print("Worker({}): {}".format(self.id, local_step))
-      if global_step >= 20:
-        break
+
+"""
+KEY INPUTS
+"""
+alpha = 0.0001
+beta = 0.001
+env = Simulator()
+n_continuous_actions = env.continuous_action_space.shape[0]
+n_discrete_actions = env.discrete_action_space.n
+state_shape = env.observation_space.shape
+layer1_size = 64
+layer2_size = 32
+layer3_size = 32
+max_global_steps = 100
+steps_per_update = 5
+num_workers = multiprocessing.cpu_count()
 
 global_counter = itertools.count()
-NUM_WORKERS = multiprocessing.cpu_count()
+returns_list = []
 
-# create the workers
-workers = []
-for worker_id in range(NUM_WORKERS):
-  worker = Worker(worker_id, global_counter)
-  workers.append(worker)
+# Build Models
+param_model, param_optimizer = ParameterAgent(beta, n_continuous_actions, state_shape,
+                                                                "Param_model", layer1_size=layer1_size,
+                                                                layer2_size=layer2_size).build_network()
+dqn_model, dqn_optimizer = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
+                           layer1_size, layer2_size, layer3_size).build_network()
 
-# start the threads
-worker_threads = []
-for worker in workers:
-  worker_fn = lambda: worker.run()
-  t = threading.Thread(target=worker_fn)
-  t.start()
-  worker_threads.append(t)
+worker = Worker(
+  name=f'worker {1}',
+  global_network_P=param_model,
+  global_network_dqn=dqn_model,
+  global_optimizer_P=param_optimizer,
+  global_optimizer_dqn=dqn_optimizer,
+  global_counter=global_counter,
+  env=Simulator(),
+  max_global_steps=max_global_steps)
 
-
-# join the threads
-for t in worker_threads:
-  t.join()
+coord = tf.train.Coordinator()
+worker.run(coord)
