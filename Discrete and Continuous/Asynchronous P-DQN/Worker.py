@@ -104,7 +104,7 @@ class Worker:
                 break
 
             if self.max_global_steps/20 % (self.global_step+1) == 0:
-                print(f'global counter: self.global_counter \n')
+                print(f'global counter: {self.global_step}/{self.max_global_steps} \n')
                 elapsed_time = time.time() - self.start_time
                 remaining_time = elapsed_time * (self.max_global_steps - self.global_step) / max(self.global_step, 1)
                 print(f'elapsed time: {elapsed_time / 60} min \n remaining time {remaining_time / 60} min \n')
