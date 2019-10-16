@@ -33,9 +33,3 @@ class DQN_Agent:
         model = Model(inputs=[input_state, input_parameters], outputs=output)
         optimizer = RMSprop(lr=self.lr, decay=1e-6)
         return model, optimizer
-
-
-#test = DQN_Agent(0.01, 5, 1, (5,), 'test')
-#plot_model(test.model, to_file='DQNmodel.png', show_shapes=True)
-
-

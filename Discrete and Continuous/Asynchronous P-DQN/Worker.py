@@ -53,9 +53,9 @@ class Worker:
                 # Stop once the max number of global steps has been reached
                 if self.max_global_steps is not None and self.global_step >= self.max_global_steps:
                     coord.request_stop()
-                    return
+                    return f'worker {self.name}, step: {self.global_step}'
         except tf.errors.CancelledError:
-            return
+            return f'worker {self.name} tf.errors.CancelledError'
 
     def choose_action(self, state, current_step, stop_step):
         state = state[np.newaxis, :]
@@ -88,9 +88,8 @@ class Worker:
     def run_n_steps(self):
         experience = []
         score = 0
-        self.state = self.env.reset()
         for _ in range(self.n_steps):
-            action = self.choose_action(self.state, self.global_step, self.max_global_steps)
+            action = self.choose_action(self.state, self.global_step, self.max_global_steps/2)
             action_continuous, action_discrete = action
             next_state, reward, done, info = self.env.step(action)
             step = Step(self.state, action_continuous, action_discrete, reward, next_state, done)
@@ -100,16 +99,20 @@ class Worker:
             self.global_step = next(self.global_counter)
             if done:
                 self.returns_list.append(score)
-                print(f"Score is {score}")
+                #print(f"Worker: {self.name} Score is {score}")
+                self.state = self.env.reset()
                 break
 
-            if self.max_global_steps/20 % (self.global_step+1) == 0:
+            if self.max_global_steps/40 % (self.global_step+1) == 0 and self.global_step > 100:
                 print(f'global counter: {self.global_step}/{self.max_global_steps} \n')
                 elapsed_time = time.time() - self.start_time
                 remaining_time = elapsed_time * (self.max_global_steps - self.global_step) / max(self.global_step, 1)
                 print(f'elapsed time: {elapsed_time / 60} min \n remaining time {remaining_time / 60} min \n')
+                running_avg = np.mean(self.returns_list[-100:])
+                print(f'running average is {running_avg}')
         return experience
 
+    #@tf.function
     def update_global_parameters(self, experience):
         target = 0
         accumulated_param_gradients = 0
