@@ -26,7 +26,8 @@ import concurrent.futures
 import itertools
 from P_actor import ParameterAgent
 from DQN import DQN_Agent
-from Worker import Worker
+#from Worker import Worker
+from Worker_memory import Worker
 import time
 
 
@@ -56,7 +57,8 @@ with tf.device('/CPU:0'):
                                                                     layer2_size=layer2_size).build_network()
     dqn_model, dqn_optimizer = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
                                layer1_size, layer2_size, layer3_size).build_network()
-
+    #param_model = load_model("/tmp/param_model.h5")
+    #dqn_model = load_model("/tmp/dqn_model.h5")
     # Create Workers
     start_time = time.time()
     workers = []
@@ -82,6 +84,10 @@ with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
 
 run_time = time.time() - start_time
 print(f'runtime is {run_time/60} min')
+
+param_model.save("/tmp/param_model.h5")
+dqn_model.save("/tmp/dqn_model.h5")
+
 
 plotter = Plotter(returns_list, len(returns_list)-1)
 plotter.plot()

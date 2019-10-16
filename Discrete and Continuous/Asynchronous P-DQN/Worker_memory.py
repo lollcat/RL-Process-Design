@@ -3,6 +3,7 @@ import tensorflow as tf
 from OrnsteinNoise import OUActionNoise
 from tensorflow.keras.models import clone_model
 import time
+from memory import Memory
 
 
 class Step:  # Stores a step
@@ -18,7 +19,7 @@ class Step:  # Stores a step
 
 class Worker:
     def __init__(self, name, global_network_P, global_network_dqn, global_optimizer_P, global_optimizer_dqn,
-                 global_counter, env, max_global_steps, returns_list, n_steps=10, gamma=0.99):
+                 global_counter, env, max_global_steps, returns_list, n_steps=10, gamma=0.99, max_memory_len=500):
         self.name = name
         self.global_network_P = global_network_P
         self.global_network_dqn = global_network_dqn
@@ -40,6 +41,8 @@ class Worker:
         self.local_param_model.set_weights(global_network_P.get_weights())
         self.local_dqn_model = clone_model(global_network_dqn)
         self.local_dqn_model.set_weights(global_network_dqn.get_weights())
+
+        self.memory = Memory(max_memory_len)
 
     def run(self, coord):
         try:
@@ -112,6 +115,9 @@ class Worker:
                 print(f'running average is {running_avg}')
         return experience
 
+    def remember(self, state, action_continuous, action_discrete, reward, new_state, done):
+        done = 1 - done
+        self.memory.add((state, action_continuous, action_discrete, reward, new_state, done))
 
     #@tf.function
     def update_global_parameters(self, experience):
@@ -125,11 +131,13 @@ class Worker:
         for step in reversed(experience):
             target = step.reward + self.gamma * target
             state = step.state[np.newaxis, :]
+            self.remember(step.state, step.action_continuous, step.action_discrete, target, # TODO finish this line)
 
             with tf.GradientTape(persistent=True) as tape:
                 #param part
                 predict_param = self.local_param_model(state)
                 Qvalues = self.local_dqn_model([state, predict_param])
+                Qvalue = Qvalues[:, step.action_discrete]
                 loss_param = - tf.reduce_sum(Qvalues)
 
                 #dqn part
