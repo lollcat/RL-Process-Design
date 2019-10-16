@@ -125,11 +125,17 @@ class Worker:
             target = step.reward + self.gamma * target
             state = step.state[np.newaxis, :]
             with tf.GradientTape(persistent=True) as tape:
+                #param part
                 predict_param = self.local_param_model(state)
                 Qvalues = self.local_dqn_model([state, predict_param])
                 Qvalue = Qvalues[:, step.action_discrete]
                 loss_param = - tf.reduce_sum(Qvalues)
-                loss_dqn = (Qvalue - target)**2
+
+                #dqn part
+                target_dqn = Qvalues.numpy()
+                target_dqn[:, step.action_discrete] = target
+                target_dqn = tf.convert_to_tensor(target_dqn)
+                loss_dqn = tf.keras.losses.MSE(Qvalues, target_dqn)
                 # get gradients of loss with respect to the param_model weights
             gradient_param = tape.gradient(loss_param, self.local_param_model.trainable_weights)
             gradient_dqn = tape.gradient(loss_dqn, self.local_dqn_model.trainable_weights)
@@ -149,19 +155,4 @@ class Worker:
         # update local nets
         self.local_param_model.set_weights(self.global_network_P.get_weights())
         self.local_dqn_model.set_weights(self.global_network_dqn.get_weights())
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 

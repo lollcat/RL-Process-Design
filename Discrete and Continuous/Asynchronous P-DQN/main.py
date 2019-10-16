@@ -42,7 +42,7 @@ state_shape = env.observation_space.shape
 layer1_size = 64
 layer2_size = 32
 layer3_size = 32
-max_global_steps = 20000
+max_global_steps = 100000
 steps_per_update = 5
 num_workers = multiprocessing.cpu_count()
 
@@ -85,3 +85,14 @@ print(f'runtime is {run_time/60} min')
 
 plotter = Plotter(returns_list, len(returns_list)-1)
 plotter.plot()
+
+state = env.reset()
+done = False
+while not done:
+    state = state[np.newaxis, :]
+    continuous_action = param_model.predict(state)
+    discrete_action = np.argmax(dqn_model.predict([state, continuous_action]))
+    state, reward, done, _ = env.step([continuous_action[0], discrete_action])
+
+print(f'seperation sequence is :{env.sep_order} \n')
+print(f'split sequence is {env.split_order}')
