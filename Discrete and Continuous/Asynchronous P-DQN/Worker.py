@@ -3,6 +3,7 @@ import tensorflow as tf
 from OrnsteinNoise import OUActionNoise
 from tensorflow.keras.models import clone_model
 import time
+from utils import Plotter
 
 
 class Step:  # Stores a step
@@ -99,11 +100,11 @@ class Worker:
             self.global_step = next(self.global_counter)
             if done:
                 self.returns_list.append(score)
-                #print(f"Worker: {self.name} Score is {score}")
+                print(f"Worker: {self.name} Score is {score}, global steps {self.global_step}/{self.max_global_steps}")
                 self.state = self.env.reset()
                 break
 
-            if self.max_global_steps/40 % (self.global_step+1) == 0 and self.global_step > 100:
+            if self.max_global_steps/20 % (self.global_step+1) == 0 and self.global_step > 100:
                 print(f'global counter: {self.global_step}/{self.max_global_steps} \n')
                 elapsed_time = time.time() - self.start_time
                 remaining_time = elapsed_time * (self.max_global_steps - self.global_step) / max(self.global_step, 1)
@@ -115,45 +116,49 @@ class Worker:
 
     #@tf.function
     def update_global_parameters(self, experience):
-        target = 0
-        accumulated_param_gradients = 0
-        accumulated_dqn_gradients = 0
-        if not experience[-1].done:
-            state = experience[-1].state[np.newaxis, :]
-            action_continuous_predict = self.local_param_model.predict(state)
-            target = np.max(self.local_dqn_model.predict([state, action_continuous_predict]))
-        for step in reversed(experience):
-            target = step.reward + self.gamma * target
-            state = step.state[np.newaxis, :]
+        with tf.device('/CPU:0'):
+            target = 0
+            accumulated_param_gradients = 0
+            accumulated_dqn_gradients = 0
+            if not experience[-1].done:
+                state = experience[-1].state[np.newaxis, :]
+                action_continuous_predict = self.local_param_model.predict(state)
+                target = np.max(self.local_dqn_model.predict([state, action_continuous_predict]))
+            for step in reversed(experience):
+                target = step.reward + self.gamma * target
+                state = step.state[np.newaxis, :]
 
-            with tf.GradientTape(persistent=True) as tape:
-                #param part
-                predict_param = self.local_param_model(state)
-                Qvalues = self.local_dqn_model([state, predict_param])
-                loss_param = - tf.reduce_sum(Qvalues)
+                with tf.GradientTape(persistent=True) as tape:
+                    #param part
+                    predict_param = self.local_param_model(state)
+                    Qvalues = self.local_dqn_model([state, predict_param])
+                    loss_param = - tf.reduce_sum(Qvalues)
 
-                #dqn part
-                target_dqn = Qvalues.numpy()
-                target_dqn[:, step.action_discrete] = target
-                target_dqn = tf.convert_to_tensor(target_dqn)
-                loss_dqn = tf.keras.losses.MSE(Qvalues, target_dqn)
-                # get gradients of loss with respect to the param_model weights
-            gradient_param = tape.gradient(loss_param, self.local_param_model.trainable_weights)
-            gradient_dqn = tape.gradient(loss_dqn, self.local_dqn_model.trainable_weights)
-            if accumulated_param_gradients == 0:
-                accumulated_param_gradients = gradient_param
-                accumulated_dqn_gradients = gradient_dqn
-            else:
-                accumulated_param_gradients = [tf.add(accumulated_param_gradients[i], gradient_param[i])
-                                               for i in range(len(gradient_param))]
-                accumulated_dqn_gradients = [tf.add(accumulated_dqn_gradients[i], gradient_dqn[i])
-                                               for i in range(len(gradient_dqn))]
-        # update global nets
-        self.global_optimizer_P.apply_gradients(zip(accumulated_param_gradients,
-                                                    self.global_network_P.trainable_weights))
-        self.global_optimizer_dqn.apply_gradients(zip(accumulated_dqn_gradients,
-                                                    self.global_network_dqn.trainable_weights))
-        # update local nets
-        self.local_param_model.set_weights(self.global_network_P.get_weights())
-        self.local_dqn_model.set_weights(self.global_network_dqn.get_weights())
+                    #dqn part
+                    target_dqn = Qvalues.numpy()
+                    target_dqn[:, step.action_discrete] = target
+                    target_dqn = tf.convert_to_tensor(target_dqn)
+                    loss_dqn = tf.keras.losses.MSE(Qvalues, target_dqn)
+                    # get gradients of loss with respect to the param_model weights
+                gradient_param = tape.gradient(loss_param, self.local_param_model.trainable_weights)
+                gradient_param = [tf.clip_by_norm(grad, 5) for grad in gradient_param]
 
+                gradient_dqn = tape.gradient(loss_dqn, self.local_dqn_model.trainable_weights)
+                gradient_dqn = [tf.clip_by_norm(grad, 5) for grad in gradient_dqn]
+
+                if accumulated_param_gradients == 0:
+                    accumulated_param_gradients = gradient_param
+                    accumulated_dqn_gradients = gradient_dqn
+                else:
+                    accumulated_param_gradients = [tf.add(accumulated_param_gradients[i], gradient_param[i])
+                                                   for i in range(len(gradient_param))]
+                    accumulated_dqn_gradients = [tf.add(accumulated_dqn_gradients[i], gradient_dqn[i])
+                                                   for i in range(len(gradient_dqn))]
+            # update global nets
+            self.global_optimizer_P.apply_gradients(zip(accumulated_param_gradients,
+                                                        self.global_network_P.trainable_weights))
+            self.global_optimizer_dqn.apply_gradients(zip(accumulated_dqn_gradients,
+                                                        self.global_network_dqn.trainable_weights))
+            # update local nets
+            self.local_param_model.set_weights(self.global_network_P.get_weights())
+            self.local_dqn_model.set_weights(self.global_network_dqn.get_weights())

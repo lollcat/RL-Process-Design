@@ -42,8 +42,8 @@ state_shape = env.observation_space.shape
 layer1_size = 64
 layer2_size = 32
 layer3_size = 32
-max_global_steps = 100000
-steps_per_update = 5
+max_global_steps = 500000
+steps_per_update = 10
 num_workers = multiprocessing.cpu_count()
 
 global_counter = itertools.count()
@@ -56,8 +56,8 @@ with tf.device('/CPU:0'):
                                                                     layer2_size=layer2_size).build_network()
     dqn_model, dqn_optimizer = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
                                layer1_size, layer2_size, layer3_size).build_network()
-    #param_model = load_model("/tmp/param_model.h5")
-    #dqn_model = load_model("/tmp/dqn_model.h5")
+    #param_model = load_model("param_model.h5")
+    #dqn_model = load_model("dqn_model.h5")
     # Create Workers
     start_time = time.time()
     workers = []
@@ -76,16 +76,16 @@ with tf.device('/CPU:0'):
         workers.append(worker)
 
 
-coord = tf.train.Coordinator()
-worker_fn = lambda worker_: worker_.run(coord)
-with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-    executor.map(worker_fn, workers, timeout=10)
+    coord = tf.train.Coordinator()
+    worker_fn = lambda worker_: worker_.run(coord)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+        executor.map(worker_fn, workers, timeout=10)
 
 run_time = time.time() - start_time
 print(f'runtime is {run_time/60} min')
 
-param_model.save("/tmp/param_model.h5")
-dqn_model.save("/tmp/dqn_model.h5")
+param_model.save("param_model.h5")
+dqn_model.save("dqn_model.h5")
 
 
 plotter = Plotter(returns_list, len(returns_list)-1)
