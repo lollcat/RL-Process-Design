@@ -1,11 +1,4 @@
-from tensorflow.keras.backend import set_floatx
-set_floatx('float64')
-from P_DQN_Agent import Agent
-import numpy as np
-from utils import Plotter
-from DistillationSimulator import Simulator
-import time
-
+import tensorflow as tf
 #tf.debugging.set_log_device_placement(True)
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -20,16 +13,26 @@ if gpus:
     print(e)
 
 
+from tensorflow.keras.backend import set_floatx
+set_floatx('float64')
+from P_DQN_Agent import Agent
+import numpy as np
+from utils import Plotter
+from DistillationSimulator import Simulator
+import time
+
+
+
 env = Simulator()
 agent = Agent(alpha=0.0001, beta=0.001, n_discrete_actions=env.discrete_action_space.n,
               n_continuous_actions=env.continuous_action_space.shape[0], state_shape=env.observation_space.shape,
-              batch_size=32)
+              batch_size=32, max_size=1000)
 np.random.seed(0)
-total_eps = 1000
+total_eps = 5000
 total_eps_greedy = total_eps/2
 
 # if there is a saved agent then uncomment below:
-agent.load_models()
+#agent.load_models()
 
 score_history = []
 start_time = time.time()

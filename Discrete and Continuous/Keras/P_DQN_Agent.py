@@ -10,7 +10,7 @@ from P_actor import ParameterAgent
 
 class Agent:
     def __init__(self, alpha, beta, n_discrete_actions, n_continuous_actions, state_shape, tau=0.001, batch_size=32,
-                 gamma=0.99, max_size=10000, layer1_size=64, layer2_size=32, layer3_size=32):
+                 gamma=0.99, max_size=1000, layer1_size=64, layer2_size=32, layer3_size=32):
         self.batch_size = batch_size
         self.n_discrete_actions = n_discrete_actions
         self.n_continuous_actions = n_continuous_actions
@@ -31,7 +31,7 @@ class Agent:
         [self.target_dqn.trainable_weights[i].assign(
             self.dqn_model.trainable_weights[i])
             for i in range(len(self.target_dqn.trainable_weights))]
-        [self.target_param.traiable_weights[i].assign(
+        [self.target_param.trainable_weights[i].assign(
             self.param_model.trainable_weights[i])
             for i in range(len(self.target_param.trainable_weights))]
 
