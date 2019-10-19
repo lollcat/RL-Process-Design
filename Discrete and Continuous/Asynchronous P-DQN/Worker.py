@@ -3,6 +3,7 @@ import tensorflow as tf
 from OrnsteinNoise import OUActionNoise
 from tensorflow.keras.models import clone_model
 import time
+from scipy.special import softmax
 from utils import Plotter
 
 
@@ -80,8 +81,8 @@ class Worker:
         random = np.random.rand()
         if random < explore_threshold:
             # paper uses uniform distribution
-            # discrete_distribution = np.softmax(predict_discrete)
-            action_discrete = np.random.choice(self.n_discrete_actions)  # , p=discrete_distribution)
+            discrete_distribution = softmax(predict_discrete)[0]
+            action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution)
         else:
             action_discrete = np.argmax(predict_discrete)
         return action_discrete

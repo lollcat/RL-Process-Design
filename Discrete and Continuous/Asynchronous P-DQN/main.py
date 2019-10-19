@@ -39,10 +39,10 @@ env = Simulator()
 n_continuous_actions = env.continuous_action_space.shape[0]
 n_discrete_actions = env.discrete_action_space.n
 state_shape = env.observation_space.shape
-layer1_size = 64
-layer2_size = 32
-layer3_size = 32
-max_global_steps = 500000
+layer1_size = 100
+layer2_size = 50
+layer3_size = 50
+max_global_steps = 100000
 steps_per_update = 10
 num_workers = multiprocessing.cpu_count()
 
@@ -89,15 +89,17 @@ dqn_model.save("dqn_model.h5")
 
 
 plotter = Plotter(returns_list, len(returns_list)-1)
-plotter.plot()
+plotter.plot(save=True)
 
 state = env.reset()
 done = False
+score = 0
 while not done:
     state = state[np.newaxis, :]
     continuous_action = param_model.predict(state)
     discrete_action = np.argmax(dqn_model.predict([state, continuous_action]))
     state, reward, done, _ = env.step([continuous_action[0], discrete_action])
+    score += reward
 
 print(f'seperation sequence is :{env.sep_order} \n')
 print(f'split sequence is {env.split_order}')
