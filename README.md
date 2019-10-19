@@ -26,6 +26,7 @@ Distillation only selecting compound with assumed split rates
 
 ## Future_plans
 Add planning: E.g. Monte Carlo Tree Search
+
 Extend problems to be closer to full chem eng agent as described in Idea Overview
 
 ## Other Notes
