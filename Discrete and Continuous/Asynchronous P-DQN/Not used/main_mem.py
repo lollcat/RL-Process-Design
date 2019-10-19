@@ -21,12 +21,11 @@ import numpy as np
 from utils import Plotter
 from DistillationSimulator import Simulator
 import multiprocessing
-#import threading
 import concurrent.futures
 import itertools
 from P_actor import ParameterAgent
 from DQN import DQN_Agent
-from Worker import Worker
+from Worker_memory import Worker
 import time
 
 
@@ -39,15 +38,15 @@ env = Simulator()
 n_continuous_actions = env.continuous_action_space.shape[0]
 n_discrete_actions = env.discrete_action_space.n
 state_shape = env.observation_space.shape
-layer1_size = 100
-layer2_size = 50
-layer3_size = 50
-max_global_steps = 100000
-steps_per_update = 10
+layer1_size = 64
+layer2_size = 32
+layer3_size = 32
+max_global_eps = 5000
+steps_per_update = 5
 num_workers = multiprocessing.cpu_count()
 
 global_counter = itertools.count()
-returns_list = []
+score_history = []
 
 # Build Models
 with tf.device('/CPU:0'):
@@ -56,8 +55,8 @@ with tf.device('/CPU:0'):
                                                                     layer2_size=layer2_size).build_network()
     dqn_model, dqn_optimizer = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
                                layer1_size, layer2_size, layer3_size).build_network()
-    #param_model = load_model("param_model.h5")
-    #dqn_model = load_model("dqn_model.h5")
+    #param_model_mem = load_model("/tmp/param_model.h5")
+    #dqn_model_mem = load_model("/tmp/dqn_model.h5")
     # Create Workers
     start_time = time.time()
     workers = []
@@ -70,36 +69,33 @@ with tf.device('/CPU:0'):
             global_optimizer_dqn=dqn_optimizer,
             global_counter=global_counter,
             env=Simulator(),
-            max_global_steps=max_global_steps,
-            returns_list=returns_list,
-            n_steps=steps_per_update)
+            max_global_eps=max_global_eps,
+            score_history=score_history)
         workers.append(worker)
 
 
-    coord = tf.train.Coordinator()
-    worker_fn = lambda worker_: worker_.run(coord)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-        executor.map(worker_fn, workers, timeout=10)
+coord = tf.train.Coordinator()
+worker_fn = lambda worker_: worker_.run(coord)
+with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+    executor.map(worker_fn, workers, timeout=10)
 
 run_time = time.time() - start_time
 print(f'runtime is {run_time/60} min')
 
-param_model.save("param_model.h5")
-dqn_model.save("dqn_model.h5")
+param_model.save("param_model_mem.h5")
+dqn_model.save("dqn_model_mem.h5")
 
 
-plotter = Plotter(returns_list, len(returns_list)-1)
-plotter.plot(save=True)
+plotter = Plotter(score_history, len(score_history) - 1)
+plotter.plot()
 
 state = env.reset()
 done = False
-score = 0
 while not done:
     state = state[np.newaxis, :]
     continuous_action = param_model.predict(state)
     discrete_action = np.argmax(dqn_model.predict([state, continuous_action]))
     state, reward, done, _ = env.step([continuous_action[0], discrete_action])
-    score += reward
 
 print(f'seperation sequence is :{env.sep_order} \n')
 print(f'split sequence is {env.split_order}')

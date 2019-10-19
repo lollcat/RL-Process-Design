@@ -10,7 +10,8 @@ from gym import Env, spaces
 
     
 class simulator(Env):
-    def __init__(self, n_reactors=9, action_size = 2, state_size = 1):
+    def __init__(self, n_reactors=9, action_size=2, state_size=1, volume=1):
+        self.volume = volume
         self.reactor_seq = []
         self.X = [0]
         self.state = None
@@ -53,11 +54,13 @@ class simulator(Env):
     def render(self, mode = 'human'):
         print(f'choice({len(self.X)-1}) - conversions: {self.X}, reactors: {self.reactor_seq}')
         
-    def equation_solver(self, r_type, X_prev, Vol = 1, a = -10, b = 10, c=2):
+    def equation_solver(self, r_type, X_prev, a=-10, b=10, c=2):
+        Vol = self.volume
+        X_new = X_prev
         #see PPT for equations
         if r_type == 0: # CSTR
             A = a
-            B = b + X_prev
+            B = b - a*X_prev
             C = c - b*X_prev
             D = -c*X_prev - Vol
             coeffs = [A, B, C, D]
@@ -68,16 +71,17 @@ class simulator(Env):
             D = -(a/3 * X_prev**3 + b/2*X_prev**2 + c* X_prev) - Vol
             coeffs = [A, B, C, D]
             
-        roots = np.roots(coeffs).real #shouldn't be getting non-real numbers so must be a bug
-        
-    
-        pos_roots = np.array([root for root in roots if root>X_prev])
-        if pos_roots.size > 0:
-            diffs =  pos_roots - X_prev  #closest conversion solution above X prev
-            answer = pos_roots[diffs == (min(diffs))][0]
-            if answer > 1:
-                return 1
+        roots = np.roots(coeffs)
+            
+        if True in np.isreal(roots):
+            roots = roots[np.isreal(roots)]
+            pos_roots = np.array([root for root in roots if root>X_prev])
+            if pos_roots.size > 0:
+                diffs = pos_roots - X_prev  #closest conversion solution above X prev
+                X_new = pos_roots[diffs == (min(diffs))][0]
             else:
-                return answer
-        else: return X_prev
-   
+                X_new = 1
+        if X_new > 1: 
+            X_new = 1
+            
+        return X_new

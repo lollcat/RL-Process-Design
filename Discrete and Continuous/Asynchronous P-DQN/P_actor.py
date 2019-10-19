@@ -27,7 +27,3 @@ class ParameterAgent:
         optimizer = RMSprop(lr=self.lr, decay=1e-6)
 
         return model, optimizer
-
-
-test = ParameterAgent(0.01, 1, (5,), 'test')
-#plot_model(test.model, to_file='Parameter_model.png', show_shapes=True)

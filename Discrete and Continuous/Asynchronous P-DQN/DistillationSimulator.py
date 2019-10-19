@@ -45,8 +45,6 @@ class Simulator:
 
         done = False
         self.steps += 1
-        if self.steps > 20:  # episode ends after 20 distillation columns
-            done = True
         previous_state = self.state.copy()
 
 
@@ -97,6 +95,9 @@ class Simulator:
 
         if np.isnan(reward) or np.isinf(reward):
             reward = -50
+
+        if self.steps > self.max_columns:  # episode ends after 20 distillation columns
+            done = True
         return self.state, reward, done, {}
 
     def reset(self):
@@ -128,4 +129,3 @@ class Simulator:
                    * (self.continuous_action_space.high - self.continuous_action_space.low)
         return LK_Split
 
-env = Simulator()
