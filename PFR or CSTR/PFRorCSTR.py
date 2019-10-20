@@ -6,9 +6,13 @@ Created on Thu Jul 18 11:18:00 2019
 """
 import numpy as np
 from gym import Env, spaces
+import matplotlib.pyplot as plt
+import matplotlib.animation as FuncAnimation
+from matplotlib import style
 
 
-    
+
+
 class simulator(Env):
     def __init__(self, n_reactors=9, action_size=2, state_size=1, volume=1):
         self.volume = volume
@@ -20,22 +24,21 @@ class simulator(Env):
         #self.state_size = state_size
         self.n_reactors = n_reactors
         self.action_space = spaces.Discrete(action_size)
-        self.observation_space = spaces.Box(low = 0, high = 1, shape = (1,))
+        self.observation_space = spaces.Box(low=0, high=1, shape = (1,))
+        self.n_steps = 0
 
-     
-    #def sample_action(self):  #rather code explicity 
-     #   return np.random.randint(action_size)
 
-       
+
     def choose_reactor(self, action):
         self.reactor_seq.append(action)
         
     def step(self, action):
+        self.n_steps += 1
         self.choose_reactor(action)
         self.X.append(self.equation_solver(action, self.X[-1]))
         self.state = np.array([self.X[-1]])  # seems like most envs give state as a np array
         reward = self.X[-1] - self.X[-2]  #increase in conversion
-        if len(self.reactor_seq )> self.n_reactors-1 or self.X[-1] >= 1:
+        if self.n_steps == self.n_reactors or self.X[-1] >= 1:
             done = True
         else: 
             done = False
@@ -45,15 +48,16 @@ class simulator(Env):
         return self.reactor_seq, self.X
         
     
-    def reset(self): 
+    def reset(self):
+        self.n_steps = 0
         self.reactor_seq = [] 
         self.X = [0]
         self.state = np.array([0])
         return self.state
     
-    def render(self, mode = 'human'):
+    def render(self, mode='human'):
         print(f'choice({len(self.X)-1}) - conversions: {self.X}, reactors: {self.reactor_seq}')
-        
+
     def equation_solver(self, r_type, X_prev, a=-10, b=10, c=2):
         Vol = self.volume
         X_new = X_prev
