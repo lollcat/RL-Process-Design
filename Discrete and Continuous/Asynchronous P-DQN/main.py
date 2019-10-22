@@ -19,7 +19,8 @@ from tensorflow.keras.backend import set_floatx
 set_floatx('float64')
 import numpy as np
 from utils import Plotter
-from DistillationSimulator import Simulator
+#from DistillationSimulator import Simulator
+from Env.Simulator_New import Simulator
 import multiprocessing
 #import threading
 import concurrent.futures
@@ -42,7 +43,7 @@ state_shape = env.observation_space.shape
 layer1_size = 100
 layer2_size = 50
 layer3_size = 50
-max_global_steps = 100000
+max_global_steps = 50000
 steps_per_update = 10
 num_workers = multiprocessing.cpu_count()
 

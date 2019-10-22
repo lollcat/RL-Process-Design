@@ -14,22 +14,25 @@ def columnsize(N):
 
     # diameter
     # classed according to heuristic ranges in order to maintain satisfactory diameters
-    interval = np.linspace(27, 170, 10)
+    n_intervals = 10
+    interval = np.linspace(27, 170, n_intervals-1)
     interval = list(interval)
     LDratio = [1 / 9, 1 / 10, 1 / 11, 1 / 12, 1 / 13, 1 / 14, 1 / 15, 1 / 16, 1 / 17]
-    for i in range(6):
+    for i in range(n_intervals-2):
         maximum = interval[i + 1]
         minimum = interval[i]
         if L > minimum and L < maximum:
             Di = LDratio[i] * L
             break
+    if L < interval[0]:
+        Di = LDratio[0] * L
+
+    if L > interval[-1]:
+        Di = LDratio[-1] * L
 
     if N < 11:
-        raise ValueError("Too few stages- resulting column height too low")
-    else:
-        #print(Di)
-        #print(L)
-        #print(L / Di)
-        return L, Di
+        print("Too few stages- resulting column height too low")
+
+    return L, Di
 
 
