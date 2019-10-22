@@ -118,7 +118,7 @@ class Simulator:
 
         cost = n_stages_actual
         self.total_cost += cost
-        reward += -cost
+        reward -= cost
 
         # if tops or bottoms are product stream reward +=10
         if min(np.sum(abs(self.product_streams - tops), axis=0)) < 0.1:
