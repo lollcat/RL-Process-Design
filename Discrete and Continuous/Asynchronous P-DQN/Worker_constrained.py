@@ -82,28 +82,27 @@ class Worker:
 
 
         if random < explore_threshold:
-            choices = np.arange(self.n_discrete_actions)
             #first rule out impossible actions
-            for i in range(state.size):
-                if state[0][i] == 0:
-                    if i != state.size - 1:
-                        choices = np.delete(choices, i)   # can't be LK
-                        predict_discrete = np.delete(predict_discrete, [i], axis=1)
-                    if i != 0:
-                        choices = np.delete(choices, [i - 1])   # can't be HK (one lighter can't be LK)
-                        predict_discrete = np.delete(predict_discrete, [i-1], axis=1)
+            if 0 in state:
+                for i in range(state.size):
+                    if state[0][i] == 0:
+                        if i != state.size - 1:
+                            predict_discrete[:, i] = 0
+                        if i != 0:
+                            predict_discrete[:, i-1] = 0
 
-            # paper uses uniform distribution
-            discrete_distribution = softmax(predict_discrete)
-            action_discrete = np.random.choice(choices, p=discrete_distribution)
+                # paper uses uniform distribution
+            discrete_distribution = softmax(predict_discrete)[0]
+            action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution)
         else:
             #first rule out impossible actions
-            for i in range(state.size):
-                if state[0][i] == 0:
-                    if i != state.size - 1:
-                        predict_discrete[i] = predict_discrete.min()  # can't be LK
-                    if i != 0:
-                        predict_discrete[i - 1] = predict_discrete.min()  # can't be HK (one lighter can't be LK)
+            if 0 in state:
+                for i in range(state.size):
+                    if state[0][i] == 0:
+                        if i != state.size - 1:
+                            predict_discrete[i] = predict_discrete.min()  # can't be LK
+                        if i != 0:
+                            predict_discrete[i - 1] = predict_discrete.min()  # can't be HK (one lighter can't be LK)
 
             action_discrete = np.argmax(predict_discrete)
         return action_discrete
