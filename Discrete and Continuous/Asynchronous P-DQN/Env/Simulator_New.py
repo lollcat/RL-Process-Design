@@ -8,21 +8,26 @@ from Env.Sizing.dc_capital_cost import expensiveDC
 
 class Simulator:
     print("TODO: constrain actions within action select in agent")
+    print("Add action: sell stream")
     def __init__(self):
         # Compound Data
-        self.compound_names = ["Methane", "Ethane", "Propane", "Butane", "Pentane"]
-        # , "Hydrogen Sulphide", "Carbon Dioxide", "Nitrogen","Helium"]
-        self.initial_state = np.array([77.1, 6.6, 3.1, 2, 3]) # , 3.3, 1.7, 3.2 Flowrates
-        self.product_prices = np.array([77.1, 6.6, 3.1, 2, 3])
+        self.compound_names = ["Methane", "Ethane", "Propane", "Isobutane", "Butane",  "Pentane+"]
+        Molar_weights = np.array([16.043, 30.07, 44.097, 58.124, 58.124, 72.151])
+        Heating_value = np.array([55.6, 51.9, 50.4, 49.5, 49.4, 55.2]) #MJ/kg
+        Price_per_MBtu = np.array([2.83, 2.54, 4.27, 5.79, 5.31,  10.41])  #  $/Million Btu  # TODO update for methane
+        exchange_rate = 15.23  #  $/R
+
+
+        self.initial_state = np.array([0.75, 0.15, 0.1, 0.01, 0.02,  0.03])*5269 # Flowrates kmol/hr
+        self.product_prices = Molar_weights*Heating_value*1000/1.055*Price_per_MBtu/1000000*exchange_rate
         self.raw_nat_gas_cost = self.initial_state.sum() * self.product_prices[0]
 
-        # Anotine data from YAWS
-        self.Antoine_a1 = np.array([6.84566, 6.95335, 7.01887, 7.00961, 7.00877]) # , 7.11958, 7.58828, 6.72531,5.2712
-        self.Antoine_a2 = np.array([435.621, 699.106, 889.864, 1022.48, 1134.15]) # , 802.227, 861.82, 285.573,13.5171
-        self.Antoine_a3 = np.array([271.361, 260.264, 257.084, 248.145, 238.678]) # , 249.61, 271.883, 270.087,	274.585
+        # Anotoine data from YAWS
+        self.Antoine_a1 = np.array([6.84566, 6.95335, 7.01887, 6.93388, 7.00961,  7.00877])
+        self.Antoine_a2 = np.array([435.621, 699.106, 889.864, 953.92, 1022.48,  1134.15])
+        self.Antoine_a3 = np.array([271.361, 260.264, 257.084, 247.077, 248.145,  238.678])
 
 
-        self.Light_order = np.array([])
 
         discrete_action_size = self.initial_state.shape[0] - 1  # action selects LK
         continuous_action_number = 1
@@ -44,11 +49,15 @@ class Simulator:
         self.column_dimensions = [] # Nstages, Reflux ratio
         self.total_annual_cost = []
         self.capital_cost = []
-        self.PaybackPeriod = []
+        self.revenue = 0
+        self.frac_spread = 0
+        self.Profit = 0
+        self.PaybackPeriod = 0
         self.current_stream = 0
         self.steps = 0
 
     def step(self, action):
+        info = []
         reward = 0
         action_continuous, action_discrete = action
         LK_split = self.action_continuous_definer(action_continuous)
@@ -69,7 +78,7 @@ class Simulator:
         tops[Light_Key] = tops[Light_Key] * LK_split
         tops[Heavy_Key] = feed[Heavy_Key] * HK_split
         bots = feed - tops
-        if sum(tops) == 0 or sum(bots) == 0:
+        if sum(tops) == 0 or sum(bots) == 0:  # TODO add this part to action selection instead
             reward = -50
             return self.state, reward, done, {}
 
@@ -84,6 +93,13 @@ class Simulator:
         self.stream_table.append(bots)
 
         system_pressure, tops_temperature, bots_temperature = self.calculate_conditions(tops, bots)
+
+        if system_pressure < 0.1 or system_pressure > 5000:
+            info.append(f'system pressure of {system_pressure} kPa is out of bounds')
+
+        if bots_temperature > 1000:
+            info.append(f' bots_temperature of {bots_temperature} is out of bounds')
+
         self.column_conditions.append([system_pressure, tops_temperature, bots_temperature])
 
         relative_volatility_top = self.Kvalues_calculator(tops_temperature, system_pressure)[Light_Key] \
@@ -132,11 +148,6 @@ class Simulator:
                 self.product_streams.append(self.state)
             if np.array_equal(self.state, self.stream_table[-1]):
                 done = True
-                self.revenue = self.revenue_calculator(self.product_streams)
-                self.frac_spread = self.revenue - self.raw_nat_gas_cost
-                self.Profit = self.frac_spread - sum(self.total_annual_cost)
-                self.PaybackPeriod = sum(self.capital_cost)/self.Profit
-
                 break
 
             self.current_stream += 1
@@ -148,7 +159,17 @@ class Simulator:
         if self.steps > self.max_columns:  # episode ends after 20 distillation columns
             done = True
 
-        return self.state, reward, done, {}
+        if done is True:
+            self.revenue = self.revenue_calculator(self.product_streams)
+            self.frac_spread = self.revenue - self.raw_nat_gas_cost
+            self.Profit = self.frac_spread - sum(self.total_annual_cost)
+            self.PaybackPeriod = sum(self.capital_cost) / self.Profit
+            if self.Profit < 0:
+                reward = self.Profit
+            else:
+                reward = max(100 - 10 * self.PaybackPeriod, 0)
+
+        return self.state, reward, done, info
 
     def reset(self):
         self.state = self.initial_state.copy()
@@ -162,13 +183,16 @@ class Simulator:
         self.column_dimensions = []
         self.product_streams = []
         self.total_annual_cost = []
-        self.PaybackPeriod = []
+        self.revenue = 0
+        self.frac_spread = 0
+        self.Profit = 0
+        self.PaybackPeriod = 0
         self.capital_cost = []
 
         return self.state
 
     def render(self, mode='human'):
-        print(f'total cost: {self.total_cost} sep_order: {self.sep_order} split_order: {self.split_order} \n')
+        print(f'products: {self.product_streams}, sep_order: {self.sep_order} split_order: {self.split_order} \n')
 
     def test_random(self, n_steps=5):
         for i in range(n_steps):
@@ -247,4 +271,9 @@ class Simulator:
 
 
 env = Simulator()
-env.run_random()
+done = False
+while not done:
+    state, reward, done, _ = env.run_random()
+print(env.product_streams)
+print(env.PaybackPeriod)
+print(env.total_annual_cost)
