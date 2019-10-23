@@ -17,7 +17,7 @@ def DCoperationcost(N, R, totflow):
 
     TAC = (C / (E * Y * G) * N * (1 + R) + Cdash / (Y * Gdash) * (1 + R) + Cddash * (1 + R)) * CEPCI2019 / CEPCI2009
     TAC = TAC * ZAR  # TAC in rands
-    TAC = TAC * totflow * 8000  # conversion to annual costs
+    TAC = TAC * totflow
     return TAC
 
 

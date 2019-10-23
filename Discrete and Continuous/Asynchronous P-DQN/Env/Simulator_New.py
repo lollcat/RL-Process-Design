@@ -5,28 +5,39 @@ from Env.Sizing.column_sizing import columnsize
 from Env.Sizing.dc_annual_cost import DCoperationcost
 from Env.Sizing.dc_capital_cost import expensiveDC
 
-
+"""  Natural Gas Problem
+        self.compound_names = ["Methane", "Ethane", "Propane", "Isobutane", "Butane",  "Pentane+"]
+        Molar_weights = np.array([16.043, 30.07, 44.097, 58.124, 58.124, 72.151])
+        Heating_value = np.array([55.6, 51.9, 50.4, 49.5, 49.4, 55.2]) #MJ/kg
+        Price_per_MBtu = np.array([2.83, 2.54, 4.27, 5.79, 5.31,  10.41])  #  $/Million Btu  # TODO update for methane
+        
+                # Anotoine data from YAWS
+        self.Antoine_a1 = np.array([6.84566, 6.95335, 7.01887, 6.93388, 7.00961,  7.00877])
+        self.Antoine_a2 = np.array([435.621, 699.106, 889.864, 953.92, 1022.48,  1134.15 ])
+        self.Antoine_a3 = np.array([271.361, 260.264, 257.084, 247.077, 248.145,  238.678])
+        self.initial_state = np.array([0.75, 0.15, 0.1, 0.01, 0.02,  0.03])*5269 # Flowrates kmol/hr
+        self.product_prices = Molar_weights*Heating_value*1000/1.055*Price_per_MBtu/1000000*exchange_rate
+"""
 class Simulator:
     print("TODO: constrain actions within action select in agent")
     print("Add action: sell stream")
     def __init__(self):
         # Compound Data
-        self.compound_names = ["Methane", "Ethane", "Propane", "Isobutane", "Butane",  "Pentane+"]
-        Molar_weights = np.array([16.043, 30.07, 44.097, 58.124, 58.124, 72.151])
-        Heating_value = np.array([55.6, 51.9, 50.4, 49.5, 49.4, 55.2]) #MJ/kg
-        Price_per_MBtu = np.array([2.83, 2.54, 4.27, 5.79, 5.31,  10.41])  #  $/Million Btu  # TODO update for methane
+        self.compound_names = ["Ethane", "Propylene", "Propane", "1-butene", "n-butane", "n-pentane"]
+        self.initial_state = np.array([9.1, 6.8, 9.1, 6.8, 6.8, 6.8])
+        Molar_weights = np.array([30.07, 42.08, 44.097, 56.108,  58.124, 72.151])
+
+
+        self.Antoine_a1 = np.array([6.95335, 7.01612, 7.01887, 7.0342,  7.00961, 7.00877])
+        self.Antoine_a2 = np.array([699.106, 860.992, 889.864, 1013.6,  1022.48, 1134.15])
+        self.Antoine_a3 = np.array([260.264, 255.895, 257.084, 250.292, 248.145, 238.678])
+
+
         exchange_rate = 15.23  #  $/R
 
 
-        self.initial_state = np.array([0.75, 0.15, 0.1, 0.01, 0.02,  0.03])*5269 # Flowrates kmol/hr
-        self.product_prices = Molar_weights*Heating_value*1000/1.055*Price_per_MBtu/1000000*exchange_rate
-        self.raw_nat_gas_cost = self.initial_state.sum() * self.product_prices[0]
 
-        # Anotoine data from YAWS
-        self.Antoine_a1 = np.array([6.84566, 6.95335, 7.01887, 6.93388, 7.00961,  7.00877])
-        self.Antoine_a2 = np.array([435.621, 699.106, 889.864, 953.92, 1022.48,  1134.15])
-        self.Antoine_a3 = np.array([271.361, 260.264, 257.084, 247.077, 248.145,  238.678])
-
+        self.product_prices = np.array([9.1, 6.8, 9.1, 6.8, 6.8, 6.8])
 
 
         discrete_action_size = self.initial_state.shape[0] - 1  # action selects LK
@@ -50,7 +61,6 @@ class Simulator:
         self.total_annual_cost = []
         self.capital_cost = []
         self.revenue = 0
-        self.frac_spread = 0
         self.Profit = 0
         self.PaybackPeriod = 0
         self.current_stream = 0
@@ -161,11 +171,10 @@ class Simulator:
 
         if done is True:
             self.revenue = self.revenue_calculator(self.product_streams)
-            self.frac_spread = self.revenue - self.raw_nat_gas_cost
-            self.Profit = self.frac_spread - sum(self.total_annual_cost)
+            self.Profit = self.revenue - sum(self.total_annual_cost)
             self.PaybackPeriod = sum(self.capital_cost) / self.Profit
             if self.Profit < 0:
-                reward = self.Profit
+                reward = max(self.Profit/1000, -100)
             else:
                 reward = max(100 - 10 * self.PaybackPeriod, 0)
 
@@ -184,7 +193,6 @@ class Simulator:
         self.product_streams = []
         self.total_annual_cost = []
         self.revenue = 0
-        self.frac_spread = 0
         self.Profit = 0
         self.PaybackPeriod = 0
         self.capital_cost = []
@@ -255,10 +263,7 @@ class Simulator:
     def revenue_calculator(self, product_streams):
         revenue = 0
         for stream in product_streams:
-            if np.argmax(stream) == 0:
-                revenue += stream.sum() * self.product_prices[0]
-            else:
-                revenue += stream.max() * self.product_prices[np.argmax(stream)]
+            revenue += stream.max() * self.product_prices[np.argmax(stream)]
 
         return revenue
     def run_random(self):
@@ -266,14 +271,3 @@ class Simulator:
         action_discrete = self.discrete_action_space.sample()
         state, reward, done, _ = self.step([action_continuous, action_discrete])
         return state, reward, done, _
-
-
-
-
-env = Simulator()
-done = False
-while not done:
-    state, reward, done, _ = env.run_random()
-print(env.product_streams)
-print(env.PaybackPeriod)
-print(env.total_annual_cost)
