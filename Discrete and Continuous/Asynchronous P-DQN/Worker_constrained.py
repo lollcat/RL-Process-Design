@@ -4,7 +4,20 @@ from OrnsteinNoise import OUActionNoise
 from tensorflow.keras.models import clone_model
 import time
 from scipy.special import softmax
-from utils import Plotter
+import sys
+import linecache
+
+
+def PrintException():
+    exc_type, exc_obj, tb = sys.exc_info()
+    f = tb.tb_frame
+    lineno = tb.tb_lineno
+    filename = f.f_code.co_filename
+    linecache.checkcache(filename)
+    line = linecache.getline(filename, lineno, f.f_globals)
+    print('EXCEPTION IN ({}, LINE {} "{}"): {}'.format(filename, lineno, line.strip(), exc_obj))
+
+
 
 
 class Step:  # Stores a step
@@ -48,7 +61,6 @@ class Worker:
             while not coord.should_stop():
                 # Collect some experience
                 experience = self.run_n_steps()
-
                 # Update the global networks using local gradients
                 self.update_global_parameters(experience)
 
@@ -56,8 +68,11 @@ class Worker:
                 if self.max_global_steps is not None and self.global_step >= self.max_global_steps:
                     coord.request_stop()
                     return f'worker {self.name}, step: {self.global_step}'
+
         except tf.errors.CancelledError:
             return f'worker {self.name} tf.errors.CancelledError'
+
+
 
     def choose_action(self, state, current_step, stop_step):
         state = state[np.newaxis, :]
@@ -79,33 +94,23 @@ class Worker:
     def eps_greedy_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.1):
         explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
         random = np.random.rand()
-
-
+        illegal_actions = self.illegal_actions(state)[0]
         if random < explore_threshold:
-            #first rule out impossible actions
-            if 0 in state:
-                for i in range(state.size):
-                    if state[0][i] == 0:
-                        if i != state.size - 1:
-                            predict_discrete[:, i] = 0
-                        if i != 0:
-                            predict_discrete[:, i-1] = 0
-
                 # paper uses uniform distribution
             discrete_distribution = softmax(predict_discrete)[0]
-            action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution)
+            discrete_distribution[illegal_actions] = 0
+            action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution/discrete_distribution.sum())
         else:
-            #first rule out impossible actions
-            if 0 in state:
-                for i in range(state.size):
-                    if state[0][i] == 0:
-                        if i != state.size - 1:
-                            predict_discrete[i] = predict_discrete.min()  # can't be LK
-                        if i != 0:
-                            predict_discrete[i - 1] = predict_discrete.min()  # can't be HK (one lighter can't be LK)
-
+            predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
             action_discrete = np.argmax(predict_discrete)
         return action_discrete
+
+    def illegal_actions(self, state):
+        LK_legal1 = state[:, 0:-1] == 0
+        LK_legal2 = state[:, 1:] == 0
+        LK_legal = LK_legal1 + LK_legal2
+        return LK_legal
+
 
     def run_n_steps(self):
         experience = []
@@ -119,6 +124,7 @@ class Worker:
             score += reward
             self.state = next_state
             self.global_step = next(self.global_counter)
+
             if done:
                 self.returns_list.append(score)
                 print(f"Worker: {self.name} Score is {score}, global steps {self.global_step}/{self.max_global_steps}")
@@ -132,8 +138,8 @@ class Worker:
                 print(f'elapsed time: {elapsed_time / 60} min \n remaining time {remaining_time / 60} min \n')
                 running_avg = np.mean(self.returns_list[-100:])
                 print(f'running average is {running_avg}')
-        return experience
 
+        return experience
 
     #@tf.function
     def update_global_parameters(self, experience):

@@ -1,6 +1,7 @@
 
 from Env.Simulator_New import Simulator
 import matplotlib.pyplot as plt
+from Worker_constrained import Worker
 
 env = Simulator()
 profit = []

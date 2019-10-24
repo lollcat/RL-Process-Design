@@ -18,7 +18,4 @@ def DCoperationcost(N, R, totflow):
     TAC = (C / (E * Y * G) * N * (1 + R) + Cdash / (Y * Gdash) * (1 + R) + Cddash * (1 + R)) * CEPCI2019 / CEPCI2009
     TAC = TAC * ZAR  # TAC in rands
     TAC = TAC * totflow
-    return TAC
-
-
-#test = DCoperationcost(22, 1.3, 100)
+    return TAC*0

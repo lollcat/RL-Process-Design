@@ -27,7 +27,8 @@ import concurrent.futures
 import itertools
 from P_actor import ParameterAgent
 from DQN import DQN_Agent
-from Worker import Worker
+#from Worker import Worker
+from Worker_constrained import Worker
 import time
 
 
@@ -43,9 +44,10 @@ state_shape = env.observation_space.shape
 layer1_size = 100
 layer2_size = 50
 layer3_size = 50
-max_global_steps = 50000
+max_global_steps = 10000
 steps_per_update = 10
 num_workers = multiprocessing.cpu_count()
+num_workers = 1
 
 global_counter = itertools.count()
 returns_list = []
@@ -85,12 +87,12 @@ with tf.device('/CPU:0'):
 run_time = time.time() - start_time
 print(f'runtime is {run_time/60} min')
 
-param_model.save("param_model.h5")
-dqn_model.save("dqn_model.h5")
+#param_model.save("param_model.h5")
+#dqn_model.save("dqn_model.h5")
 
-
+"""
 plotter = Plotter(returns_list, len(returns_list)-1)
-plotter.plot(save=True)
+plotter.plot()
 
 state = env.reset()
 done = False
@@ -104,3 +106,4 @@ while not done:
 
 print(f'seperation sequence is :{env.sep_order} \n')
 print(f'split sequence is {env.split_order}')
+"""

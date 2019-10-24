@@ -1,5 +1,5 @@
 import numpy as np
-from gym import Env, spaces
+from gym import spaces
 from scipy.optimize import fsolve
 from Env.Sizing.column_sizing import columnsize
 from Env.Sizing.dc_annual_cost import DCoperationcost
@@ -8,7 +8,7 @@ from Env.Sizing.dc_capital_cost import expensiveDC
 """  Natural Gas Problem
         self.compound_names = ["Methane", "Ethane", "Propane", "Isobutane", "Butane",  "Pentane+"]
         Molar_weights = np.array([16.043, 30.07, 44.097, 58.124, 58.124, 72.151])
-        Heating_value = np.array([55.6, 51.9, 50.4, 49.5, 49.4, 55.2]) #MJ/kg
+        Heating_value = np.array([55.6,  51.9, 50.4, 49.5, 49.4,   55.2]) #MJ/kg
         Price_per_MBtu = np.array([2.83, 2.54, 4.27, 5.79, 5.31,  10.41])  #  $/Million Btu  # TODO update for methane
         
                 # Anotoine data from YAWS
@@ -24,8 +24,10 @@ class Simulator:
     def __init__(self):
         # Compound Data
         self.compound_names = ["Ethane", "Propylene", "Propane", "1-butene", "n-butane", "n-pentane"]
-        self.initial_state = np.array([9.1, 6.8, 9.1, 6.8, 6.8, 6.8])
-        Molar_weights = np.array([30.07, 42.08, 44.097, 56.108,  58.124, 72.151])
+        self.initial_state = np.array([9.1, 6.8,  9.1,      6.8,    6.8,     6.8])
+        Molar_weights = np.array([30.07,  42.08,  44.097,  56.108,  58.124,  72.15])
+        Heating_value = np.array([51.9,   49.0,   50.4,    48.5,    49.4,    48.6])  # MJ/kg
+        Price_per_MBtu = np.array([2.54,  17.58,  4.27,    29.47,   5.31,    13.86])  # $/Million Btu
 
 
         self.Antoine_a1 = np.array([6.95335, 7.01612, 7.01887, 7.0342,  7.00961, 7.00877])
@@ -37,7 +39,7 @@ class Simulator:
 
 
 
-        self.product_prices = np.array([9.1, 6.8, 9.1, 6.8, 6.8, 6.8])
+        self.product_prices = Molar_weights*Heating_value*1000/1.055*Price_per_MBtu/1000000*exchange_rate
 
 
         discrete_action_size = self.initial_state.shape[0] - 1  # action selects LK
@@ -57,7 +59,7 @@ class Simulator:
         self.sep_order = []
         self.split_order = []
         self.column_conditions = []  # pressure, tops temperature, bots temperature
-        self.column_dimensions = [] # Nstages, Reflux ratio
+        self.column_dimensions = []  # Nstages, Reflux ratio
         self.total_annual_cost = []
         self.capital_cost = []
         self.revenue = 0
@@ -88,17 +90,12 @@ class Simulator:
         tops[Light_Key] = tops[Light_Key] * LK_split
         tops[Heavy_Key] = feed[Heavy_Key] * HK_split
         bots = feed - tops
-        if sum(tops) == 0 or sum(bots) == 0:  # TODO add this part to action selection instead
-            reward = -50
-            return self.state, reward, done, {}
 
         LK_D = tops[Light_Key] / tops.sum()
         HK_D = tops[Heavy_Key] / tops.sum()
         LK_B = bots[Light_Key] / bots.sum()
         HK_B = bots[Heavy_Key] / bots.sum()
 
-        if LK_D in [0,1] or LK_B in [0, 1]:
-            return self.state, reward, done, {}
         self.stream_table.append(tops)
         self.stream_table.append(bots)
 
@@ -172,11 +169,11 @@ class Simulator:
         if done is True:
             self.revenue = self.revenue_calculator(self.product_streams)
             self.Profit = self.revenue - sum(self.total_annual_cost)
-            self.PaybackPeriod = sum(self.capital_cost) / self.Profit
-            if self.Profit < 0:
+            if self.Profit <= 0 or self.PaybackPeriod > 20:
                 reward = max(self.Profit/1000, -100)
             else:
-                reward = max(100 - 10 * self.PaybackPeriod, 0)
+                self.PaybackPeriod = sum(self.capital_cost) / self.Profit
+                reward = max(100 - 5 * self.PaybackPeriod, 0)
 
         return self.state, reward, done, info
 
