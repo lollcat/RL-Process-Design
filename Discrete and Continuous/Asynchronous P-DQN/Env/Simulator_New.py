@@ -56,6 +56,7 @@ class Simulator:
         self.stream_table = [self.initial_state.copy()]
         self.outlet_streams = []
         self.product_streams = []
+        self.separated_streams = []
         self.sep_order = []
         self.split_order = []
         self.column_conditions = []  # pressure, tops temperature, bots temperature
@@ -71,6 +72,7 @@ class Simulator:
     def step(self, action):
         info = []
         reward = 0
+        self.separated_streams.append(self.state)
         action_continuous, action_discrete = action
         LK_split = self.action_continuous_definer(action_continuous)
         self.split_order.append(LK_split)
@@ -181,6 +183,7 @@ class Simulator:
     def reset(self):
         self.state = self.initial_state.copy()
         self.stream_table = [self.initial_state.copy()]
+        self.separated_streams = []
         self.current_stream = 0
         self.sep_order = []
         self.steps = 0
@@ -198,7 +201,8 @@ class Simulator:
         return self.state
 
     def render(self, mode='human'):
-        print(f'products: {self.product_streams}, sep_order: {self.sep_order} split_order: {self.split_order} \n')
+        print(f'stream {self.state} is seperated with an LK of {self.sep_order[-1]} '
+              f'with a split of {self.split_order[-1]}')
 
     def test_random(self, n_steps=5):
         for i in range(n_steps):

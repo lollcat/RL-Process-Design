@@ -30,6 +30,7 @@ from DQN import DQN_Agent
 #from Worker import Worker
 from Worker_constrained import Worker
 import time
+from tester import Tester
 
 
 """
@@ -93,15 +94,6 @@ print(f'runtime is {run_time/60} min')
 plotter = Plotter(returns_list, len(returns_list)-1)
 plotter.plot()
 
-state = env.reset()
-done = False
-score = 0
-while not done:
-    state = state[np.newaxis, :]
-    continuous_action = param_model.predict(state)
-    discrete_action = np.argmax(dqn_model.predict([state, continuous_action]))
-    state, reward, done, _ = env.step([continuous_action[0], discrete_action])
-    score += reward
+env = Tester(param_model, dqn_model, Simulator()).test()
 
-print(f'seperation sequence is :{env.sep_order} \n')
-print(f'split sequence is {env.split_order}')
+
