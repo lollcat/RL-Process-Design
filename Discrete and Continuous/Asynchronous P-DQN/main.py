@@ -47,7 +47,6 @@ layer3_size = 50
 max_global_steps = 10000
 steps_per_update = 10
 num_workers = multiprocessing.cpu_count()
-num_workers = 1
 
 global_counter = itertools.count()
 returns_list = []
@@ -90,7 +89,7 @@ print(f'runtime is {run_time/60} min')
 #param_model.save("param_model.h5")
 #dqn_model.save("dqn_model.h5")
 
-"""
+
 plotter = Plotter(returns_list, len(returns_list)-1)
 plotter.plot()
 
@@ -106,4 +105,3 @@ while not done:
 
 print(f'seperation sequence is :{env.sep_order} \n')
 print(f'split sequence is {env.split_order}')
-"""

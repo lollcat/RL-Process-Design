@@ -169,6 +169,7 @@ class Simulator:
         if done is True:
             self.revenue = self.revenue_calculator(self.product_streams)
             self.Profit = self.revenue - sum(self.total_annual_cost)
+            self.PaybackPeriod = sum(self.capital_cost) / self.Profit
             if self.Profit <= 0 or self.PaybackPeriod > 20:
                 reward = max(self.Profit/1000, -100)
             else:
