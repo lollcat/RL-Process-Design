@@ -19,15 +19,18 @@ from tensorflow.keras.backend import set_floatx
 set_floatx('float64')
 import numpy as np
 from utils import Plotter
-from DistillationSimulator import Simulator
+#from DistillationSimulator import Simulator
+from Env.Simulator_New import Simulator
 import multiprocessing
 #import threading
 import concurrent.futures
 import itertools
 from P_actor import ParameterAgent
 from DQN import DQN_Agent
-from Worker import Worker
+#from Worker import Worker
+from Worker_constrained import Worker
 import time
+from tester import Tester
 
 
 """
@@ -42,7 +45,7 @@ state_shape = env.observation_space.shape
 layer1_size = 100
 layer2_size = 50
 layer3_size = 50
-max_global_steps = 100000
+max_global_steps = 10000
 steps_per_update = 10
 num_workers = multiprocessing.cpu_count()
 
@@ -84,22 +87,13 @@ with tf.device('/CPU:0'):
 run_time = time.time() - start_time
 print(f'runtime is {run_time/60} min')
 
-param_model.save("param_model.h5")
-dqn_model.save("dqn_model.h5")
+#param_model.save("param_model.h5")
+#dqn_model.save("dqn_model.h5")
 
 
 plotter = Plotter(returns_list, len(returns_list)-1)
-plotter.plot(save=True)
+plotter.plot()
 
-state = env.reset()
-done = False
-score = 0
-while not done:
-    state = state[np.newaxis, :]
-    continuous_action = param_model.predict(state)
-    discrete_action = np.argmax(dqn_model.predict([state, continuous_action]))
-    state, reward, done, _ = env.step([continuous_action[0], discrete_action])
-    score += reward
+env = Tester(param_model, dqn_model, Simulator()).test()
 
-print(f'seperation sequence is :{env.sep_order} \n')
-print(f'split sequence is {env.split_order}')
+

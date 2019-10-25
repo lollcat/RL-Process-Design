@@ -7,6 +7,8 @@ class Plotter(object):
     def __init__(self, score_history, episodes):
         self.score_history = score_history
         self.episodes = episodes + 1
+        if episodes < 100:
+            raise ValueError("Not enough episodes")
 
     def running_mean(self, x, N):
         cumsum = np.cumsum(np.insert(x, 0, 0))
