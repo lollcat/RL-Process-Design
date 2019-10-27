@@ -14,7 +14,7 @@ class Tester:
         while not done:
             state = state[np.newaxis, :]
             continuous_action = self.param_model.predict(state)
-            predict_discrete = (self.dqn_model.predict([state, continuous_action]))
+            predict_discrete = self.dqn_model.predict([state, continuous_action])
             illegal_actions = self.illegal_actions(state)[0]
             predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
             action_discrete = np.argmax(predict_discrete)

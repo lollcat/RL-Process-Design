@@ -54,6 +54,7 @@ class Simulator:
         self.observation_space = spaces.Box(low=0, high=9.1, shape=self.initial_state.shape)
 
         self.stream_table = [self.initial_state.copy()]
+        self.column_streams = []
         self.outlet_streams = []
         self.product_streams = []
         self.separated_streams = []
@@ -100,6 +101,7 @@ class Simulator:
 
         self.stream_table.append(tops)
         self.stream_table.append(bots)
+        self.column_streams.append((self.current_stream, len(self.stream_table)-2, len(self.stream_table)-1))
 
         system_pressure, tops_temperature, bots_temperature = self.calculate_conditions(tops, bots)
 
@@ -152,9 +154,10 @@ class Simulator:
         recovery = max(np.divide(self.state, self.initial_state))
         current_stream_needs_sep = purity < 0.96 and recovery > 0.2
         while not current_stream_needs_sep:
-            self.outlet_streams.append(self.state)
+            self.outlet_streams.append(self.current_stream)
             if purity > 0.96:
                 self.product_streams.append(self.state)
+
             if np.array_equal(self.state, self.stream_table[-1]):
                 done = True
                 break
@@ -197,6 +200,7 @@ class Simulator:
         self.Profit = 0
         self.PaybackPeriod = 0
         self.capital_cost = []
+        self.column_streams = []
 
         return self.state
 

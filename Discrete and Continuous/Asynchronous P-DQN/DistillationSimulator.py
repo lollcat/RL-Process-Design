@@ -66,6 +66,7 @@ class Simulator:
             return self.state, reward, done, {}
         self.stream_table.append(tops)
         self.stream_table.append(bots)
+        self.column_streams.append((self.current_stream, len(self.stream_table)-1, len(self.stream_table)))
 
         # calculate number of stages using the fenske equation & give punishment
         n_stages = np.log(LK_D/(1-LK_D) * (1-LK_B)/LK_B)/np.log(self.relative_volatility[Light_Key])

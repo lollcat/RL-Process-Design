@@ -16,21 +16,20 @@ if gpus:
 
 
 from tensorflow.keras.backend import set_floatx
+from tensorflow.keras.models import load_model
 set_floatx('float64')
 import numpy as np
-from utils import Plotter
-#from DistillationSimulator import Simulator
 from Env.Simulator_New import Simulator
 import multiprocessing
-#import threading
 import concurrent.futures
 import itertools
 from P_actor import ParameterAgent
 from DQN import DQN_Agent
-#from Worker import Worker
 from Worker_constrained import Worker
 import time
 from tester import Tester
+from utils import Plotter
+
 
 
 """
@@ -87,13 +86,12 @@ with tf.device('/CPU:0'):
 run_time = time.time() - start_time
 print(f'runtime is {run_time/60} min')
 
-#param_model.save("param_model.h5")
-#dqn_model.save("dqn_model.h5")
-
+param_model.save("param_model.h5")
+dqn_model.save("dqn_model.h5")
+reward_data = np.array(returns_list)
+np.savetxt("rewards.csv", reward_data, delimiter=",")
 
 plotter = Plotter(returns_list, len(returns_list)-1)
 plotter.plot()
 
 env = Tester(param_model, dqn_model, Simulator()).test()
-
-
