@@ -18,7 +18,8 @@ set_floatx('float64')
 from P_DQN_Agent import Agent
 import numpy as np
 from utils import Plotter
-from DistillationSimulator import Simulator
+#from DistillationSimulator import Simulator
+from Env.Simulator_New import Simulator
 import time
 
 
