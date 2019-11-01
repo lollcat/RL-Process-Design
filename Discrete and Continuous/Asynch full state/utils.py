@@ -11,20 +11,34 @@ class Plotter:
         self.episodes = episodes + 1
         if episodes < 100:
             raise ValueError("Not enough episodes")
+        self.by_random = -2913200744.389557
+        self.by_lightness = 100 - 1677.66685017
+        self.by_flowrate = 100 - 7132.20972035
+        self.by_volatility = 100 - 5527.4419697
 
     def running_mean(self, x, N):
         cumsum = np.cumsum(np.insert(x, 0, 0))
         return (cumsum[N:] - cumsum[:-N]) / N
 
-    def plot(self, save=False):
+    def plot(self, save=False, freeze_point=False):
         episodes = np.arange(self.episodes)
         smoothed_rews = self.running_mean(self.score_history, 100)
-        plt.plot(episodes[-len(smoothed_rews):], smoothed_rews)
+        plt.plot(episodes[-len(smoothed_rews):], smoothed_rews, color="blue")
         plt.plot(episodes, self.score_history, color='grey', alpha=0.3)
+        plt.plot([episodes[0], episodes[-1]], [self.by_flowrate, self.by_flowrate], alpha=0.3)
+        plt.plot([episodes[0], episodes[-1]], [self.by_volatility, self.by_volatility], alpha=0.6)
+        plt.plot([episodes[0], episodes[-1]], [self.by_lightness, self.by_lightness], alpha=0.6)
+        plt.plot([episodes[0], episodes[-1]], [self.by_random, self.by_random], alpha=0.6)
+        if freeze_point is not False:
+            plt.plot([freeze_point, freeze_point], [min(self.score_history), max(self.score_history)], "--", color="black")
         plt.yscale("symlog")
         plt.xlabel("episodes")
         plt.ylabel("reward")
-        plt.legend(["avg reward", "reward"])
+        if freeze_point is False:
+            plt.legend(["avg reward", "reward", "Flowrate heuristic", "Volatility heuristic", "Lightness heuristic", "Random Average"])
+        else:
+            plt.legend(["avg reward", "reward", "Flowrate heuristic", "Volatility heuristic", "Lightness heuristic",
+                        "Random Average", "Freeze point"])
         if save is True:
             plt.savefig("RewardvsSteps_" + str(times().user) + ".png")
         plt.show()

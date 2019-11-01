@@ -1,7 +1,7 @@
 
 from tensorflow.keras.layers import Dense, Input, Concatenate, Flatten
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras.optimizers import RMSprop, Adagrad, SGD, Adadelta, Nadam
 
 
 class DQN_Agent:
@@ -31,7 +31,12 @@ class DQN_Agent:
         output = Dense(self.n_discrete_actions, activation='linear', name ="output")(dense3)
 
         model = Model(inputs=[input_state, input_parameters], outputs=output)
-        optimizer = RMSprop(lr=self.lr, decay=1e-6)
+        optimizer = RMSprop(lr=self.lr)
+        #optimizer = Adagrad(lr=self.lr) # super bad
+        #optimizer = SGD(lr=self.lr, momentum=0.9, decay=0.01)
+        #optimizer = Adadelta()  #shocking
+        #optimizer = Nadam(lr=self.lr)
+
         return model, optimizer
 
 

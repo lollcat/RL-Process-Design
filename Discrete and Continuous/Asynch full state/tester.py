@@ -25,6 +25,7 @@ class Tester:
                 self.env.render()
         return self.env
 
+
     def illegal_actions(self, state):
         LK_legal1 = state[:, :, 0:-1] == 0
         LK_legal1 = LK_legal1.flatten(order="C")

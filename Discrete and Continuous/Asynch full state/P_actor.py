@@ -1,7 +1,7 @@
 
 from tensorflow.keras.layers import Dense, Input, Concatenate, Flatten
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras.optimizers import RMSprop, Adagrad, SGD, Adadelta, Nadam
 from tensorflow.keras.utils import plot_model
 
 
@@ -25,6 +25,10 @@ class ParameterAgent:
         output = Dense(self.n_continuous_actions, activation='tanh', name="output")(dense2)
 
         model = Model(inputs=input_state, outputs=output)
-        optimizer = RMSprop(lr=self.lr, decay=1e-6)
+        optimizer = RMSprop(lr=self.lr) #, decay = 0.000001
+        #optimizer = Adagrad(lr=self.lr) #did superbad
+        optimizer = SGD(lr=self.lr, momentum=0.9, decay=0.01) # medium - try with more data?
+        #optimizer = Adadelta() # shocking
+        optimizer = Nadam(lr=self.lr)
 
         return model, optimizer
