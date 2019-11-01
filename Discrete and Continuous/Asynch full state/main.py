@@ -92,6 +92,7 @@ dqn_model.save("dqn_model.h5")
 reward_data = np.array(returns_list)
 np.savetxt("rewards.csv", reward_data, delimiter=",")
 
+
 plotter = Plotter(returns_list, len(returns_list)-1)
 plotter.plot()
 

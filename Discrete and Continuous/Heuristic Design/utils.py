@@ -21,7 +21,6 @@ class Plotter:
         smoothed_rews = self.running_mean(self.score_history, 100)
         plt.plot(episodes[-len(smoothed_rews):], smoothed_rews)
         plt.plot(episodes, self.score_history, color='grey', alpha=0.3)
-        plt.yscale("symlog")
         plt.xlabel("episodes")
         plt.ylabel("reward")
         plt.legend(["avg reward", "reward"])
@@ -56,7 +55,9 @@ class Visualiser:
             tops, bottoms = env.column_streams[i][1:]
             stream = env.stream_table[tops]
             flowrate = int(stream.sum())
-            purity = int(100 * stream.max() / stream.sum())
+            purity = 100 * stream.max() / stream.sum()
+            if not np.isnan(purity):
+                purity = int(purity)
             compound = stream.argmax()
             compound = env.compound_names[compound]
             outlet_nodes.append(
@@ -66,7 +67,9 @@ class Visualiser:
 
             stream = env.stream_table[bottoms]
             flowrate = int(stream.sum())
-            purity = int(100 * stream.max() / stream.sum())
+            purity = 100 * stream.max() / stream.sum()
+            if not np.isnan(purity):
+                purity = int(purity)
             compound = stream.argmax()
             compound = env.compound_names[compound]
             outlet_nodes.append(pydot.Node(f"Bottoms Column {i+1} \n {flowrate} kmol/s \n{purity}% {compound} {i}", shape="box", color="white"))
