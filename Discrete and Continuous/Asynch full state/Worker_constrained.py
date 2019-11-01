@@ -81,20 +81,22 @@ class Worker:
     def eps_greedy_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.1):
         explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
         random = np.random.rand()
-        illegal_actions = self.illegal_actions(state)[0]
+        illegal_actions = self.illegal_actions(state)
+        predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
         if random < explore_threshold:
                 # paper uses uniform distribution
             discrete_distribution = softmax(predict_discrete)[0]
             discrete_distribution[illegal_actions] = 0
             action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution/discrete_distribution.sum())
         else:
-            predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
             action_discrete = np.argmax(predict_discrete)
         return action_discrete
 
     def illegal_actions(self, state):
-        LK_legal1 = state[:, 0:-1] == 0
-        LK_legal2 = state[:, 1:] == 0
+        LK_legal1 = state[:, :, 0:-1] == 0
+        LK_legal1 = LK_legal1.flatten(order="C")
+        LK_legal2 = state[:, :, 1:] == 0
+        LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
         return LK_legal
 

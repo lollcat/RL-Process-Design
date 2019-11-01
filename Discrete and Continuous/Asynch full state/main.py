@@ -1,3 +1,4 @@
+# TODO add better input rep than flat to state?
 # https://www.udemy.com/course/deep-reinforcement-learning-in-python
 
 import tensorflow as tf
@@ -95,3 +96,5 @@ plotter = Plotter(returns_list, len(returns_list)-1)
 plotter.plot()
 
 env = Tester(param_model, dqn_model, Simulator()).test()
+env.split_order
+env.sep_order

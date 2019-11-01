@@ -1,5 +1,6 @@
 import tensorflow as tf
-#tf.debugging.set_log_device_placement(True)
+tf.debugging.set_log_device_placement(True)
+"""
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
   try:
@@ -11,7 +12,7 @@ if gpus:
   except RuntimeError as e:
     # Memory growth must be set before GPUs have been initialized
     print(e)
-
+"""
 
 from tensorflow.keras.backend import set_floatx
 set_floatx('float64')
@@ -21,13 +22,13 @@ from utils import Plotter
 #from DistillationSimulator import Simulator
 from Env.Simulator_New import Simulator
 import time
-
+from tester import Tester
 
 
 env = Simulator()
 agent = Agent(alpha=0.0001, beta=0.001, n_discrete_actions=env.discrete_action_space.n,
               n_continuous_actions=env.continuous_action_space.shape[0], state_shape=env.observation_space.shape,
-              batch_size=32, max_size=1000)
+              batch_size=32, max_size=500)
 np.random.seed(0)
 total_eps = 5000
 total_eps_greedy = total_eps/2
@@ -73,16 +74,5 @@ agent.save_models()
 
 plotter = Plotter(score_history, total_eps-1)
 plotter.plot(save=True)
-done = False
-state = env.reset()
-score = 0
-while done is False: # run an episode
-    print(state)
-    action = agent.best_action(state)
-    action_continuous, action_discrete = action
-    state, reward, done, info = env.step(action)
-    score += reward
 
-print(score)
-print(env.sep_order)
-print(env.split_order)
+env = Tester(agent.param_model, agent.dqn_model, Simulator()).test()

@@ -2,6 +2,7 @@ import tensorflow as tf
 from tensorflow.keras.models import clone_model, load_model
 from tensorflow import reduce_sum
 import numpy as np
+from scipy.special import softmax
 
 from OrnsteinNoise import OUActionNoise
 from memory import ReplayBuffer
@@ -62,7 +63,7 @@ class Agent:
 
         # get discrete action
         predict_discrete = self.dqn_model.predict([state, action_continuous])
-        action_discrete = self.eps_greedy_action(predict_discrete, current_step, stop_step)
+        action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
 
         action_continuous = action_continuous[0]  # take it back to the correct shape
         return action_continuous, action_discrete
