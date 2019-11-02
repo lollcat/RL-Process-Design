@@ -38,11 +38,11 @@ class Simulator:
         self.state_streams = np.zeros(self.max_outlet_streams) - 1
         self.state_streams[0] = 0
 
-        discrete_action_size = self.max_outlet_streams * self.split_option_n  # action selects stream & LK
+        self.discrete_action_size = self.max_outlet_streams * self.split_option_n  # action selects stream & LK
         continuous_action_number = 1
 
         # spaces for mixed action space?
-        self.discrete_action_space = spaces.Discrete(discrete_action_size)
+        self.discrete_action_space = spaces.Discrete(self.discrete_action_size)
         self.continuous_action_space_input = spaces.Box(low=-1, high=1, shape=(continuous_action_number,))
         self.continuous_action_space = spaces.Box(low=0.8, high=0.999, shape=(continuous_action_number,))
         self.observation_space = spaces.Box(low=0, high=9.1, shape=self.initial_state.shape)
@@ -91,7 +91,7 @@ class Simulator:
         selected_stream_number = self.state_streams[Selected_stream]
 
         done = False
-        feed = self.state[Selected_stream]
+        feed = self.state[Selected_stream].copy()
 
 
 
@@ -159,7 +159,7 @@ class Simulator:
         self.capital_cost.append(capital_cost)
 
 
-        if self.n_outlet_streams == self.max_outlet_streams:  # episode ends after max number of streams produced
+        if self.n_outlet_streams >= self.max_outlet_streams:  # episode ends after max number of streams produced
             done = True
 
         if done is True:
@@ -201,14 +201,6 @@ class Simulator:
     def render(self, mode='human'):
         print(f'stream {self.state} is seperated with an LK of {self.sep_order[-1]} '
               f'with a split of {self.split_order[-1]}')
-
-    def test_random(self, n_steps=5):
-        for i in range(n_steps):
-            LK = np.random.randint(0, self.initial_state.size - 1)
-            LK_split = np.random.rand(1)
-            action = np.array([LK, LK_split])
-            state, reward, done, _ = self.step(action)
-            print(f'reward: {reward}, LK: {LK}, LK_split: {LK_split}')
 
     def action_continuous_definer(self, action_continuous):
         # agent gives continuous argument between -1 and 1 (width 2)
@@ -267,10 +259,19 @@ class Simulator:
         return revenue
 
     def run_random(self):
-            action_continuous = self.continuous_action_space.sample()
-            action_discrete = np.random.randint(self.n_outlet_streams)*self.split_option_n + np.random.randint(self.split_option_n)
+            action_continuous = self.continuous_action_space_input.sample()
+            illegal_actions = self.illegal_actions(self.state)
+            action_discrete = np.random.choice([i for i in range(self.discrete_action_size) if illegal_actions[i] == False])
             state, reward, done, _ = self.step([action_continuous, action_discrete])
             return state, reward, done, _
+
+    def illegal_actions(self, state):
+        LK_legal1 = state[:, 0:-1] == 0
+        LK_legal1 = LK_legal1.flatten(order="C")
+        LK_legal2 = state[:, 1:] == 0
+        LK_legal2 = LK_legal2.flatten(order="C")
+        LK_legal = LK_legal1 + LK_legal2
+        return LK_legal
 
 """
 env = Simulator()

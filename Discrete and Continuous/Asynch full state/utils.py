@@ -11,10 +11,10 @@ class Plotter:
         self.episodes = episodes + 1
         if episodes < 100:
             raise ValueError("Not enough episodes")
-        self.by_random = -2913200744.389557
-        self.by_lightness = 100 - 1677.66685017
-        self.by_flowrate = 100 - 7132.20972035
-        self.by_volatility = 100 - 5527.4419697
+        self.by_random = -5155277651.497198
+        self.by_lightness = 100 - 2685.59
+        self.by_flowrate = 100 - 11949.91057215
+        self.by_volatility = 100 - 9575.65660175
 
     def running_mean(self, x, N):
         cumsum = np.cumsum(np.insert(x, 0, 0))
@@ -57,8 +57,9 @@ class Visualiser:
 
         for i in range(len(env.sep_order)):
             LK = env.sep_order[i]
-            split = env.split_order[i].round(3)[0]
-            nodes.append(pydot.Node(f'Column {i + 1} \nLK is {LK} \nsplit is {split}', shape="square"))
+            split = round(env.split_order[i].round(3)[0], 3)
+            n_trays = int(env.column_dimensions[i][0])
+            nodes.append(pydot.Node(f'Column {i + 1} \nLK is {LK} \nsplit is {split} \nntrays is {n_trays}', shape="square"))
             G.add_node(nodes[i])
             if i > 0:
                 stream_in = env.column_streams[i][0]
@@ -68,24 +69,26 @@ class Visualiser:
 
             # add outlet streams
             tops, bottoms = env.column_streams[i][1:]
-            stream = env.stream_table[tops]
-            flowrate = int(stream.sum())
-            purity = int(100 * stream.max() / stream.sum())
-            compound = stream.argmax()
-            compound = env.compound_names[compound]
-            outlet_nodes.append(
-                pydot.Node(f"Tops Column {i+1} \n {flowrate} kmol/s \n{purity}% {compound}", shape="box", color="white"))
-            G.add_node(outlet_nodes[-1])
-            G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], headport="w", tailport="ne"))
+            if tops in env.state_streams:
+                stream = env.stream_table[tops]
+                flowrate = int(stream.sum())
+                purity = int(100 * stream.max() / stream.sum())
+                compound = stream.argmax()
+                compound = env.compound_names[compound]
+                outlet_nodes.append(
+                    pydot.Node(f"Tops Column {i+1} \n {flowrate} kmol/s \n{purity}% {compound}", shape="box", color="white"))
+                G.add_node(outlet_nodes[-1])
+                G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], headport="w", tailport="ne"))
 
-            stream = env.stream_table[bottoms]
-            flowrate = int(stream.sum())
-            purity = int(100 * stream.max() / stream.sum())
-            compound = stream.argmax()
-            compound = env.compound_names[compound]
-            outlet_nodes.append(pydot.Node(f"Bottoms Column {i+1} \n {flowrate} kmol/s \n{purity}% {compound} {i}", shape="box", color="white"))
-            G.add_node(outlet_nodes[-1])
-            G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], headport="w", tailport="se"))
+            if bottoms in env.state_streams:
+                stream = env.stream_table[bottoms]
+                flowrate = int(stream.sum())
+                purity = int(100 * stream.max() / stream.sum())
+                compound = stream.argmax()
+                compound = env.compound_names[compound]
+                outlet_nodes.append(pydot.Node(f"Bottoms Column {i+1} \n {flowrate} kmol/s \n{purity}% {compound} {i}", shape="box", color="white"))
+                G.add_node(outlet_nodes[-1])
+                G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], headport="w", tailport="se"))
         BFD = imageio.imread(G.create_png())
         return BFD
 

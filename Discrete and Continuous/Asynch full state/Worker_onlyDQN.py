@@ -81,12 +81,12 @@ class Worker_DQN:
         illegal_actions = self.illegal_actions(state)
         predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
         if random < explore_threshold:
-            """
+
                 # paper uses uniform distribution
-            discrete_distribution = softmax(predict_discrete)[0]
-            discrete_distribution[illegal_actions] = 0
-            action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution/discrete_distribution.sum())
-            """
+            #discrete_distribution = softmax(predict_discrete)[0]
+            #discrete_distribution[illegal_actions] = 0
+            #action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution/discrete_distribution.sum())
+
             action_discrete = np.random.choice([i for i in range(self.n_discrete_actions) if illegal_actions[i] == False])
         else:
             action_discrete = np.argmax(predict_discrete)
@@ -154,7 +154,7 @@ class Worker_DQN:
                     target_dqn = tf.convert_to_tensor(target_dqn)
                     loss_dqn = tf.keras.losses.MSE(Qvalues, target_dqn)
                 gradient_dqn = tape.gradient(loss_dqn, self.local_dqn_model.trainable_weights)
-                #gradient_dqn = [tf.clip_by_norm(grad, 5) for grad in gradient_dqn]
+                gradient_dqn = [tf.clip_by_norm(grad, 5) for grad in gradient_dqn]
 
                 if accumulated_dqn_gradients == 0:
                     accumulated_dqn_gradients = gradient_dqn
