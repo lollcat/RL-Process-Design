@@ -1,2 +1,0 @@
-model_checkpoint_path: "TargetActorDPG_ddpg.ckpt"
-all_model_checkpoint_paths: "TargetActorDPG_ddpg.ckpt"
