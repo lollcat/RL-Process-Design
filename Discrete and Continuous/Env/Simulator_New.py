@@ -25,7 +25,7 @@ class Simulator:
     def __init__(self):
         # Compound Data
         self.compound_names = ["Ethane", "Propylene", "Propane", "1-butene", "n-butane", "n-pentane"]
-        self.feed = np.array([3, 5,  12, 2, 9, 7])*100
+        self.feed = np.array([3, 5,  12, 2, 9, 7])
         self.max_outlet_streams = 6
         self.initial_state = np.zeros((self.max_outlet_streams, self.feed.shape[0]))
         self.initial_state[0] = self.feed
@@ -69,7 +69,6 @@ class Simulator:
         self.split_order = []
         self.column_conditions = []  # pressure, tops temperature, bots temperature
         self.column_dimensions = []  # Nstages, Reflux ratio
-        self.total_annual_cost = []
         self.capital_cost = []
         self.revenue = 0
         self.Profit = 0
@@ -165,10 +164,10 @@ class Simulator:
         if done is True:
             self.classify_streams()
             self.revenue = self.revenue_calculator(self.product_streams)
-            #self.Performance_metric = sum(self.capital_cost) / max(self.revenue, 1) # prevent 0 revenue from effecting things
-            reward = 100 - self.Performance_metric
-            self.Performance_metric = (self.revenue - sum(self.capital_cost)/10)/1e9
-            reward = self.Performance_metric
+            self.Performance_metric = sum(self.capital_cost) / max(self.revenue, 1) # prevent 0 revenue from effecting things
+            reward = max(10 - self.Performance_metric, -100)
+            #self.Performance_metric = (self.revenue - sum(self.capital_cost)/10)/1e9
+            #reward = self.Performance_metric
 
         return self.state, reward, done, info
 
@@ -257,7 +256,7 @@ class Simulator:
     def revenue_calculator(self, product_streams):
         revenue = 0
         for stream in product_streams:
-            revenue += stream.max() * self.product_prices[np.argmax(stream)]
+            revenue += stream.max() * self.product_prices[np.argmax(stream)]*8000
         return revenue
 
     def run_random(self):

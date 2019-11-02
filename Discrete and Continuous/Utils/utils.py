@@ -4,6 +4,7 @@ from os import times
 from IPython.display import Image
 import pydot
 import imageio
+import string
 
 class Plotter:
     def __init__(self, score_history, episodes, metric1=True):
@@ -61,40 +62,49 @@ class Visualiser:
         edges = []
         image_list = []
 
+        feed_string = "".join([f"{env.compound_names[i]} {round(env.feed[i])} kmol/h\n"
+                                        for i in range(env.feed.shape[0])])
+        feed_node = pydot.Node(feed_string, shape="square", color="white")
+        G.add_node(feed_node)
         for i in range(len(env.sep_order)):
             LK = env.sep_order[i]
             split = round(env.split_order[i][0]*100, 1)
             n_trays = int(env.column_dimensions[i][0])
-            nodes.append(pydot.Node(f'Column {i + 1} \nLK is {LK} \nsplit is {split}% \nntrays is {n_trays}', shape="square"))
+            nodes.append(pydot.Node(f'Column {i + 1} \nLK is {LK} \nsplit is {split}% \nntrays is {n_trays}',
+                                    shape="square"))
             G.add_node(nodes[i])
             if i > 0:
                 stream_in = env.column_streams[i][0]
                 column_link, loc = self.find_column(stream_in)
-                edges.append(pydot.Edge(nodes[column_link], nodes[i], headport="w", tailport=loc))
+                edges.append(pydot.Edge(nodes[column_link], nodes[i], label=int(stream_in+1), headport="w",
+                                        tailport=loc))
                 G.add_edge(edges[i - 1])
+            else:
+                G.add_edge(pydot.Edge(feed_node, nodes[0], label=1, headport="w", tailport="e"))
 
             # add outlet streams
             tops, bottoms = env.column_streams[i][1:]
             if tops in env.state_streams:
                 stream = env.stream_table[tops]
-                flowrate = int(stream.sum())
+                flowrate = int(stream.sum()+0.5)
                 purity = int(100 * stream.max() / stream.sum())
                 compound = stream.argmax()
                 compound = env.compound_names[compound]
                 outlet_nodes.append(
-                    pydot.Node(f"Tops Column {i+1} \n {flowrate} kmol/s \n{purity}% {compound}", shape="box", color="white"))
+                    pydot.Node(f"Tops Column {i+1} \n {flowrate} kmol/h \n{purity}% {compound}", shape="box", color="white"))
                 G.add_node(outlet_nodes[-1])
-                G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], headport="w", tailport="ne"))
+                G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], label=int(tops+1), headport="w", tailport="ne"))
 
             if bottoms in env.state_streams:
                 stream = env.stream_table[bottoms]
-                flowrate = int(stream.sum())
-                purity = int(100 * stream.max() / stream.sum())
+                flowrate = int(stream.sum()+0.5)
+                purity = round((100 * stream.max() / stream.sum()), 1)
                 compound = stream.argmax()
                 compound = env.compound_names[compound]
-                outlet_nodes.append(pydot.Node(f"Bottoms Column {i+1} \n {flowrate} kmol/s \n{purity}% {compound} {i}", shape="box", color="white"))
+                outlet_nodes.append(pydot.Node(f"Bottoms Column {i+1} \n {flowrate} kmol/h \n{purity}% {compound}",
+                                               shape="box", color="white"))
                 G.add_node(outlet_nodes[-1])
-                G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], headport="w", tailport="se"))
+                G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], label=int(bottoms+1), headport="w", tailport="se"))
         BFD = imageio.imread(G.create_png())
         return BFD
 
