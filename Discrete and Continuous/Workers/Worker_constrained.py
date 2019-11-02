@@ -78,18 +78,23 @@ class Worker:
         action_continuous = action_continuous[0]  # take it back to the correct shape
         return action_continuous, action_discrete
 
-    def eps_greedy_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0):
+    def eps_greedy_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.05):
         explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
         random = np.random.rand()
         illegal_actions = self.illegal_actions(state)
         predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
         if random < explore_threshold:
-                # paper uses uniform distribution
+            """
+            # paper uses uniform distribution
             discrete_distribution = softmax(predict_discrete)[0]
             discrete_distribution[illegal_actions] = 0
             action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution/discrete_distribution.sum())
+            """
+            action_discrete = np.random.choice(
+                   [i for i in range(self.n_discrete_actions) if illegal_actions[i] == False])
         else:
             action_discrete = np.argmax(predict_discrete)
+
         return action_discrete
 
     def illegal_actions(self, state):
@@ -105,7 +110,7 @@ class Worker:
         experience = []
         score = 0
         for _ in range(self.n_steps):
-            action = self.choose_action(self.state, self.global_step, round(self.max_global_steps*9/10))
+            action = self.choose_action(self.state, self.global_step, round(self.max_global_steps*3/4))
             action_continuous, action_discrete = action
             next_state, reward, done, info = self.env.step(action)
             step = Step(self.state, action_continuous, action_discrete, reward, next_state, done)

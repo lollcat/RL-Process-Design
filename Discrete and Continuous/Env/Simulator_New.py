@@ -22,7 +22,8 @@ from Env.Sizing.dc_capital_cost import expensiveDC
 class Simulator:
     print("TODO: make action of 0 end episode (Submit design)")
 
-    def __init__(self):
+    def __init__(self, metric=0):
+        self.metric = metric
         # Compound Data
         self.compound_names = ["Ethane", "Propylene", "Propane", "1-butene", "n-butane", "n-pentane"]
         self.feed = np.array([3, 5,  12, 2, 9, 7])
@@ -73,6 +74,7 @@ class Simulator:
         self.revenue = 0
         self.Profit = 0
         self.Performance_metric = 0
+        self.Performance_metric2 = 0
 
     def step(self, action):
         # TODO: make action of 0 end episode ("Submit design")
@@ -165,9 +167,12 @@ class Simulator:
             self.classify_streams()
             self.revenue = self.revenue_calculator(self.product_streams)
             self.Performance_metric = sum(self.capital_cost) / max(self.revenue, 1) # prevent 0 revenue from effecting things
-            reward = max(10 - self.Performance_metric, -100)
-            #self.Performance_metric = (self.revenue - sum(self.capital_cost)/10)/1e9
-            #reward = self.Performance_metric
+            self.Performance_metric2 = (self.revenue - sum(self.capital_cost)/10)/1e7
+
+            if self.metric == 0:
+                reward = max(10 - self.Performance_metric, -100)
+            elif self.metric == 1:
+                reward = self.Performance_metric2
 
         return self.state, reward, done, info
 
@@ -190,6 +195,7 @@ class Simulator:
         self.revenue = 0
         self.Profit = 0
         self.Performance_metric = 0
+        self.Performance_metric2 = 0
         self.capital_cost = []
         self.column_streams = []
 

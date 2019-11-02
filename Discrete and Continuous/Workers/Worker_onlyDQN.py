@@ -73,7 +73,7 @@ class Worker_DQN:
         action_continuous = action_continuous[0]  # take it back to the correct shape
         return action_continuous, action_discrete
 
-    def eps_greedy_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0):
+    def eps_greedy_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.05):
         explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
         random = np.random.rand()
         illegal_actions = self.illegal_actions(state)
@@ -103,7 +103,7 @@ class Worker_DQN:
         experience = []
         score = 0
         for _ in range(self.n_steps):
-            action = self.choose_action(self.state, self.global_step, round(self.max_global_steps*9/10))
+            action = self.choose_action(self.state, self.global_step, round(self.max_global_steps*3/4))
             action_continuous, action_discrete = action
             next_state, reward, done, info = self.env.step(action)
             step = Step(self.state, action_continuous, action_discrete, reward, next_state, done)

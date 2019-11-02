@@ -13,15 +13,15 @@ class Plotter:
         if episodes < 100:
             raise ValueError("Not enough episodes")
         if metric1 is True:
-            self.by_random = -5155277651.497198
-            self.by_lightness = 100 - 2685.59
-            self.by_flowrate = 100 - 11949.91057215
-            self.by_volatility = 100 - 9575.65660175
+            self.by_random = -47.00914847
+            self.by_lightness = 10 - 0.70803373
+            self.by_flowrate = 10 - 1.33751091
+            self.by_volatility = 10 - 0.71155643
         else:
-            self.by_random = -5155277651.497198
-            self.by_lightness = -0.25861988
-            self.by_flowrate = -1.15409665
-            self.by_volatility = -0.92460427
+            self.by_random = 0.7266093129375468
+            self.by_lightness = 7.18519751
+            self.by_flowrate = 6.69844181
+            self.by_volatility = 7.18247357
 
     def running_mean(self, x, N):
         cumsum = np.cumsum(np.insert(x, 0, 0))
@@ -47,7 +47,7 @@ class Plotter:
             plt.legend(["avg reward", "reward", "Flowrate heuristic", "Volatility heuristic", "Lightness heuristic",
                         "Random Average", "Freeze point"])
         if save is True:
-            plt.savefig("RewardvsSteps_" + str(times().user) + ".png")
+            plt.savefig("Data_Plots/RewardvsSteps_" + str(times().user) + ".png")
         plt.show()
 
 class Visualiser:

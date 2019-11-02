@@ -76,7 +76,7 @@ with tf.device('/CPU:0'):
             global_optimizer_P=param_optimizer,
             global_optimizer_dqn=dqn_optimizer,
             global_counter=global_counter,
-            env=Simulator(),
+            env=Simulator(metric=1),
             max_global_steps=max_global_steps,
             returns_list=returns_list,
             n_steps=steps_per_update)
@@ -107,7 +107,7 @@ with tf.device('/CPU:0'):
             global_optimizer_P=param_optimizer,
             global_optimizer_dqn=RMSprop(lr=0.01),
             global_counter=global_counter2,
-            env=Simulator(),
+            env=Simulator(metric=1),
             max_global_steps=max_global_steps2,
             returns_list=returns_list,
             n_steps=steps_per_update)
@@ -129,7 +129,8 @@ np.savetxt("Data_Plots/rewards.csv", reward_data, delimiter=",")
 
 #plotter = Plotter(returns_list, len(returns_list)-1)
 #plotter.plot(save=True)
-plotter = Plotter(returns_list, len(returns_list)-1)
+plotter = Plotter(returns_list, len(returns_list)-1, metric1=False)
+#plotter = Plotter(returns_list, len(returns_list)-1)
 plotter.plot(save=True, freeze_point=round(max_global_steps*len(returns_list)/(max_global_steps2+max_global_steps)))
 
 env = Tester(param_model, dqn_model, Simulator()).test()

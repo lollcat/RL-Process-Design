@@ -2,7 +2,8 @@ from Env.Simulator_New import Simulator
 import numpy as np
 
 env = Simulator()
-reward_list = []
+reward_list1 = []
+reward_list2 = []
 for i in range(100000):
     env.reset()
     done = False
@@ -10,8 +11,11 @@ for i in range(100000):
     while not done:
         state, reward, done, _ = env.run_random()
         score += reward
+    reward_list1.append(score)
+    reward_list2.append(env.Performance_metric2)
 
-    reward_list.append(score)
+average1 = np.average(reward_list1)
+print(average1)
+average2 = np.average(reward_list2)
+print(average2)
 
-average = np.average(reward_list)
-print(average)

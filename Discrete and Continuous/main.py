@@ -45,8 +45,8 @@ state_shape = env.observation_space.shape
 layer1_size = 100
 layer2_size = 50
 layer3_size = 50
-max_global_steps = 10000 #100000
-steps_per_update = 10
+max_global_steps = 20000 #100000
+steps_per_update = 6
 num_workers = multiprocessing.cpu_count()
 
 global_counter = itertools.count()
@@ -72,7 +72,7 @@ with tf.device('/CPU:0'):
             global_optimizer_P=param_optimizer,
             global_optimizer_dqn=dqn_optimizer,
             global_counter=global_counter,
-            env=Simulator(),
+            env=Simulator(metric=1),  # Simulator(metric=1)
             max_global_steps=max_global_steps,
             returns_list=returns_list,
             n_steps=steps_per_update)
@@ -87,14 +87,14 @@ with tf.device('/CPU:0'):
 run_time = time.time() - start_time
 print(f'runtime is {run_time/60} min')
 
-param_model.save("param_model.h5")
-dqn_model.save("dqn_model.h5")
+param_model.save("Nets/param_model.h5")
+dqn_model.save("Nets/dqn_model.h5")
 reward_data = np.array(returns_list)
-np.savetxt("rewards.csv", reward_data, delimiter=",")
+np.savetxt("Data_Plots/rewards.csv", reward_data, delimiter=",")
 
-
-plotter = Plotter(returns_list, len(returns_list)-1)
-plotter.plot()
+plotter = Plotter(returns_list, len(returns_list)-1, metric1=False)
+#plotter = Plotter(returns_list, len(returns_list)-1)
+plotter.plot(save=True)
 
 env = Tester(param_model, dqn_model, Simulator()).test()
 env.split_order
