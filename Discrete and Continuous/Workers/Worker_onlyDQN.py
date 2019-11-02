@@ -1,11 +1,9 @@
 import numpy as np
 import tensorflow as tf
-from OrnsteinNoise import OUActionNoise
+from Utils.OrnsteinNoise import OUActionNoise
 from tensorflow.keras.models import clone_model
 import time
 from scipy.special import softmax
-import sys
-import linecache
 
 class Step:  # Stores a step
     def __init__(self, state, action_continuous, action_discrete, reward, next_state, done):

@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from OrnsteinNoise import OUActionNoise
+from Utils.OrnsteinNoise import OUActionNoise
 from tensorflow.keras.models import clone_model
 import time
 from scipy.special import softmax

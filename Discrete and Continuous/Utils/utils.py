@@ -6,15 +6,21 @@ import pydot
 import imageio
 
 class Plotter:
-    def __init__(self, score_history, episodes):
+    def __init__(self, score_history, episodes, metric1=True):
         self.score_history = score_history
         self.episodes = episodes + 1
         if episodes < 100:
             raise ValueError("Not enough episodes")
-        self.by_random = -5155277651.497198
-        self.by_lightness = 100 - 2685.59
-        self.by_flowrate = 100 - 11949.91057215
-        self.by_volatility = 100 - 9575.65660175
+        if metric1 is True:
+            self.by_random = -5155277651.497198
+            self.by_lightness = 100 - 2685.59
+            self.by_flowrate = 100 - 11949.91057215
+            self.by_volatility = 100 - 9575.65660175
+        else:
+            self.by_random = -5155277651.497198
+            self.by_lightness = -0.25861988
+            self.by_flowrate = -1.15409665
+            self.by_volatility = -0.92460427
 
     def running_mean(self, x, N):
         cumsum = np.cumsum(np.insert(x, 0, 0))
@@ -57,9 +63,9 @@ class Visualiser:
 
         for i in range(len(env.sep_order)):
             LK = env.sep_order[i]
-            split = round(env.split_order[i].round(3)[0], 3)
+            split = round(env.split_order[i][0]*100, 1)
             n_trays = int(env.column_dimensions[i][0])
-            nodes.append(pydot.Node(f'Column {i + 1} \nLK is {LK} \nsplit is {split} \nntrays is {n_trays}', shape="square"))
+            nodes.append(pydot.Node(f'Column {i + 1} \nLK is {LK} \nsplit is {split}% \nntrays is {n_trays}', shape="square"))
             G.add_node(nodes[i])
             if i > 0:
                 stream_in = env.column_streams[i][0]

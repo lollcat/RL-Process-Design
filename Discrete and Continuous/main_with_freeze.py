@@ -24,13 +24,13 @@ from Env.Simulator_New import Simulator
 import multiprocessing
 import concurrent.futures
 import itertools
-from P_actor import ParameterAgent
-from DQN import DQN_Agent
-from Worker_constrained import Worker
-from Worker_onlyDQN import Worker_DQN
+from Nets.P_actor import ParameterAgent
+from Nets.DQN import DQN_Agent
+from Workers.Worker_constrained import Worker
+from Workers.Worker_onlyDQN import Worker_DQN
 import time
-from tester import Tester
-from utils import Plotter
+from Utils.tester import Tester
+from Utils.utils import Plotter
 from tensorflow.keras.optimizers import RMSprop
 
 
@@ -47,7 +47,7 @@ state_shape = env.observation_space.shape
 layer1_size = 100
 layer2_size = 50
 layer3_size = 50
-max_global_steps = 50000 #100000
+max_global_steps = 20000 #100000
 steps_per_update = 6
 num_workers = multiprocessing.cpu_count()
 
@@ -91,7 +91,7 @@ with tf.device('/CPU:0'):
     run_time = time.time() - start_time
     print(f'runtime part 1 is {run_time/60} min')
 
-    param_model.save("param_model.h5")
+    param_model.save("Nets/param_model.h5")
     """
     NOW DQN WITH PARAM NET FROZEN
     """
@@ -123,9 +123,9 @@ with tf.device('/CPU:0'):
     print(f'runtime part 2 is {run_time/60} min')
 
 
-dqn_model.save("dqn_model.h5")
+dqn_model.save("Nets/dqn_model.h5")
 reward_data = np.array(returns_list)
-np.savetxt("rewards.csv", reward_data, delimiter=",")
+np.savetxt("Data_Plots/rewards.csv", reward_data, delimiter=",")
 
 #plotter = Plotter(returns_list, len(returns_list)-1)
 #plotter.plot(save=True)

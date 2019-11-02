@@ -24,12 +24,12 @@ from Env.Simulator_New import Simulator
 import multiprocessing
 import concurrent.futures
 import itertools
-from P_actor import ParameterAgent
-from DQN import DQN_Agent
-from Worker_constrained import Worker
+from Nets.P_actor import ParameterAgent
+from Nets.DQN import DQN_Agent
+from Workers.Worker_constrained import Worker
 import time
-from tester import Tester
-from utils import Plotter
+from Utils.tester import Tester
+from Utils.utils import Plotter
 
 
 
