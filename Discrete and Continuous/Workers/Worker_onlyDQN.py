@@ -62,7 +62,7 @@ class Worker_DQN:
     def choose_action(self, state, current_step, stop_step):
         state = state[np.newaxis, :]
         # get continuous action
-        action_continuous  = self.local_param_model.predict(state)  # returns list of list so get 0 ith element later on
+        action_continuous = self.local_param_model.predict(state)  # returns list of list so get 0 ith element later on
         assert action_continuous.shape == (1, 1)  # need this shape to run through actor_DQN
         # TODO this will need to be generalised by adding self.n_continuous_actions
 
@@ -84,7 +84,6 @@ class Worker_DQN:
             #discrete_distribution = softmax(predict_discrete)[0]
             #discrete_distribution[illegal_actions] = 0
             #action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution/discrete_distribution.sum())
-
             action_discrete = np.random.choice([i for i in range(self.n_discrete_actions) if illegal_actions[i] == False])
         else:
             action_discrete = np.argmax(predict_discrete)

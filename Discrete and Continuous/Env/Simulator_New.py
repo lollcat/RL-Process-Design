@@ -166,13 +166,13 @@ class Simulator:
         if done is True:
             self.classify_streams()
             self.revenue = self.revenue_calculator(self.product_streams)
-            self.Performance_metric = sum(self.capital_cost) / max(self.revenue, 1) # prevent 0 revenue from effecting things
+            self.Performance_metric = 10 - sum(self.capital_cost) / max(self.revenue, 1) # prevent 0 revenue from effecting things
             self.Performance_metric2 = (self.revenue - sum(self.capital_cost)/10)/1e7
 
             if self.metric == 0:
-                reward = max(10 - self.Performance_metric, -100)
+                reward = max(self.Performance_metric, -10)
             elif self.metric == 1:
-                reward = self.Performance_metric2
+                reward = max(self.Performance_metric2, -10)
 
         return self.state, reward, done, info
 

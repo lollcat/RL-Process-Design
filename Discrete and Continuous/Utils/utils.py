@@ -7,13 +7,13 @@ import imageio
 import string
 
 class Plotter:
-    def __init__(self, score_history, episodes, metric1=True):
+    def __init__(self, score_history, episodes, metric=0):
         self.score_history = score_history
         self.episodes = episodes + 1
         if episodes < 100:
             raise ValueError("Not enough episodes")
-        if metric1 is True:
-            self.by_random = -47.00914847
+        if metric is 0:
+            self.by_random = -2.17717706
             self.by_lightness = 10 - 0.70803373
             self.by_flowrate = 10 - 1.33751091
             self.by_volatility = 10 - 0.71155643
@@ -38,7 +38,7 @@ class Plotter:
         plt.plot([episodes[0], episodes[-1]], [self.by_random, self.by_random], alpha=0.6)
         if freeze_point is not False:
             plt.plot([freeze_point, freeze_point], [min(self.score_history), max(self.score_history)], "--", color="black")
-        plt.yscale("symlog")
+        #plt.yscale("symlog")
         plt.xlabel("episodes")
         plt.ylabel("reward")
         if freeze_point is False:
@@ -47,7 +47,7 @@ class Plotter:
             plt.legend(["avg reward", "reward", "Flowrate heuristic", "Volatility heuristic", "Lightness heuristic",
                         "Random Average", "Freeze point"])
         if save is True:
-            plt.savefig("Data_Plots/RewardvsSteps_" + str(times().user) + ".png")
+            plt.savefig("Data_Plots/RewardvsSteps_" + str(times().user) + ".png", bbox_inches='tight')
         plt.show()
 
 class Visualiser:
