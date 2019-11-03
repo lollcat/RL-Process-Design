@@ -22,7 +22,8 @@ from Env.Sizing.dc_capital_cost import expensiveDC
 class Simulator:
     print("TODO: make action of 0 end episode (Submit design)")
 
-    def __init__(self, metric=0):
+    def __init__(self, metric=0, allow_submit=False):
+        self.allow_submit = allow_submit
         self.metric = metric
         # Compound Data
         self.compound_names = ["Ethane", "Propylene", "Propane", "1-butene", "n-butane", "n-pentane"]
@@ -40,6 +41,8 @@ class Simulator:
         self.state_streams[0] = 0
 
         self.discrete_action_size = self.max_outlet_streams * self.split_option_n  # action selects stream & LK
+        if allow_submit is True:
+            self.discrete_action_size += 1
         continuous_action_number = 1
 
         # spaces for mixed action space?
@@ -53,8 +56,8 @@ class Simulator:
         Molar_weights = np.array([30.07,  42.08,  44.097,  56.108,  58.124,  72.15])
         self.molar_density = density * Molar_weights
         Heating_value = np.array([51.9,   49.0,   50.4,    48.5,    49.4,    48.6])  # MJ/kg
-        #Price_per_MBtu = np.array([2.54,  17.58,  4.27,    29.47,   5.31,    13.86])  # $/Million Btu
-        Price_per_MBtu = np.array([2.54, 17.58, 0, 0, 5.31, 13.86])
+        Price_per_MBtu = np.array([2.54,  17.58,  4.27,    29.47,   5.31,    13.86])  # $/Million Btu
+        #Price_per_MBtu = np.array([2.54, 17.58, 0, 0, 5.31, 13.86])
 
         self.Antoine_a1 = np.array([6.95335, 7.01612, 7.01887, 7.0342,  7.00961, 7.00877])
         self.Antoine_a2 = np.array([699.106, 860.992, 889.864, 1013.6,  1022.48, 1134.15])
@@ -72,18 +75,20 @@ class Simulator:
         self.column_dimensions = []  # Nstages, Reflux ratio
         self.capital_cost = []
         self.revenue = 0
+        self.revenue_by_stream = []
         self.Profit = 0
         self.Performance_metric = 0
         self.Performance_metric2 = 0
 
     def step(self, action):
-        # TODO: make action of 0 end episode ("Submit design")
         info = []
         reward = 0
 
         # get actions
-        # TODO check which action should be which for shapes to be nice for action - check starcrraft again
         action_continuous, action_discrete = action
+        if action_discrete == self.discrete_action_size - 1:
+            done = True
+            return self.state, reward, done, info
         Light_Key = action_discrete % self.split_option_n
         Selected_stream = int(action_discrete/self.split_option_n)
         LK_split = self.action_continuous_definer(action_continuous)
@@ -193,6 +198,7 @@ class Simulator:
         self.column_dimensions = []
         self.product_streams = []
         self.revenue = 0
+        self.revenue_by_stream = []
         self.Profit = 0
         self.Performance_metric = 0
         self.Performance_metric2 = 0
@@ -262,7 +268,9 @@ class Simulator:
     def revenue_calculator(self, product_streams):
         revenue = 0
         for stream in product_streams:
-            revenue += stream.max() * self.product_prices[np.argmax(stream)]*8000
+            stream_revenue = stream.max() * self.product_prices[np.argmax(stream)]*8000
+            self.revenue_by_stream.append(stream_revenue)
+            revenue += stream_revenue
         return revenue
 
     def run_random(self):

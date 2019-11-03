@@ -32,4 +32,6 @@ class Tester:
         LK_legal2 = state[:, :, 1:] == 0
         LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
+        if self.env.allow_submit is True:
+            LK_legal = np.append(LK_legal, False)
         return LK_legal

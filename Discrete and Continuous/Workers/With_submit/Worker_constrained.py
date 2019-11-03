@@ -28,7 +28,6 @@ class Worker:
         self.global_optimizer_dqn = global_optimizer_dqn
         self.global_counter = global_counter
         self.env = env
-        self.allow_submit = env.allow_submit
         self.state = self.env.reset()
         self.max_global_steps = max_global_steps
         self.global_step = 0
@@ -104,8 +103,6 @@ class Worker:
         LK_legal2 = state[:, :, 1:] == 0
         LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
-        if self.allow_submit is True:
-            LK_legal = np.append(LK_legal, False)
         return LK_legal
 
 

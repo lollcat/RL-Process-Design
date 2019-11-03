@@ -1,4 +1,4 @@
-reward_n = 0
+
 # https://www.udemy.com/course/deep-reinforcement-learning-in-python
 
 import tensorflow as tf
@@ -33,21 +33,25 @@ from Utils.utils import Plotter, Visualiser
 import matplotlib
 import matplotlib.pyplot as plt
 
-
+"""
+CONFIG
+"""
+allow_submit = False
+reward_n = 0
 
 """
 KEY INPUTS
 """
 alpha = 0.0001
 beta = alpha*10
-env = Simulator()
+env = Simulator(allow_submit=allow_submit, metric=reward_n)
 n_continuous_actions = env.continuous_action_space.shape[0]
 n_discrete_actions = env.discrete_action_space.n
 state_shape = env.observation_space.shape
 layer1_size = 100
 layer2_size = 50
 layer3_size = 50
-max_global_steps = 30000 #100000
+max_global_steps = 20000 #100000
 steps_per_update = 6
 num_workers = multiprocessing.cpu_count()
 
@@ -74,7 +78,7 @@ with tf.device('/CPU:0'):
             global_optimizer_P=param_optimizer,
             global_optimizer_dqn=dqn_optimizer,
             global_counter=global_counter,
-            env=Simulator(metric=reward_n),
+            env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps,
             returns_list=returns_list,
             n_steps=steps_per_update)
@@ -88,20 +92,22 @@ with tf.device('/CPU:0'):
 
 run_time = time.time() - start_time
 print(f'runtime is {run_time/60} min')
-plotter = Plotter(returns_list, len(returns_list)-1, metric=reward_n)
-plotter.plot()
 
-env = Tester(param_model, dqn_model, Simulator()).test()
+for i in range(100):
+    env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n)).test()
+    returns_list.append(env.Performance_metric)
 print(env.split_order)
 print(env.sep_order)
+print(env.Performance_metric)
+print(env.Performance_metric2)
 
+plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
 if env.Performance_metric > plotter.by_lightness:
     matplotlib.rcParams['figure.dpi'] = 800
     param_model.save(f"Nets/main/reward{reward_n}/param_model.h5")
     dqn_model.save(f"Nets/main/reward{reward_n}/dqn_model.h5")
     reward_data = np.array(returns_list)
     np.savetxt(f"Data_Plots/main/reward{reward_n}/rewards.csv", reward_data, delimiter=",")
-    plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
     plotter.plot(save=True)
 
     BFD = Visualiser(env).visualise()

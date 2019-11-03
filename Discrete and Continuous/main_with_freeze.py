@@ -1,5 +1,4 @@
 # https://www.udemy.com/course/deep-reinforcement-learning-in-python
-reward_n = 0
 import tensorflow as tf
 #tf.debugging.set_log_device_placement(True)
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -34,13 +33,18 @@ from tensorflow.keras.optimizers import RMSprop
 import matplotlib
 import matplotlib.pyplot as plt
 
-
+"""
+CONFIG
+"""
+allow_submit = False
+reward_n = 0
 """
 KEY INPUTS
 """
+
 alpha = 0.0001
 beta = alpha*10
-env = Simulator()
+env = Simulator(allow_submit=allow_submit, metric=reward_n) #)
 n_continuous_actions = env.continuous_action_space.shape[0]
 n_discrete_actions = env.discrete_action_space.n
 state_shape = env.observation_space.shape
@@ -76,7 +80,7 @@ with tf.device('/CPU:0'):
             global_optimizer_P=param_optimizer,
             global_optimizer_dqn=dqn_optimizer,
             global_counter=global_counter,
-            env=Simulator(metric=reward_n),
+            env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps,
             returns_list=returns_list,
             n_steps=steps_per_update)
@@ -108,7 +112,7 @@ with tf.device('/CPU:0'):
             global_optimizer_P=param_optimizer,
             global_optimizer_dqn=RMSprop(lr=0.0001),
             global_counter=global_counter2,
-            env=Simulator(metric=reward_n),
+            env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps2,
             returns_list=returns_list,
             n_steps=steps_per_update)
@@ -124,22 +128,20 @@ with tf.device('/CPU:0'):
     print(f'runtime part 2 is {run_time2/60} min')
 
 
-plotter = Plotter(returns_list, len(returns_list)-1, metric=reward_n)
-plotter.plot(freeze_point=freeze_point)
-
-env = Tester(param_model, dqn_model, Simulator()).test()
 for i in range(100):
-    env = Tester(param_model, dqn_model, Simulator()).test()
+    env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n)).test()
     returns_list.append(env.Performance_metric)
 print(env.split_order)
 print(env.sep_order)
+print(env.Performance_metric)
+print(env.Performance_metric2)
 
+plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
 if env.Performance_metric > plotter.by_lightness:
     param_model.save(f"Nets/With_freeze/reward{reward_n}/param_model.h5")
     dqn_model.save(f"Nets/With_freeze/reward{reward_n}/dqn_model.h5")
     reward_data = np.array(returns_list)
     np.savetxt(f"Data_Plots/With_freeze/reward{reward_n}/rewards.csv", reward_data, delimiter=",")
-    plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
     plotter.plot(save=True, freeze_point=freeze_point)
 
     BFD = Visualiser(env).visualise()
