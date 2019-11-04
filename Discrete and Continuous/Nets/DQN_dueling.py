@@ -16,7 +16,8 @@ class DQN_Agent:
         self.layer2_size = layer2_size
         self.layer3_size = layer3_size
         self.state_shape = state_shape
-        self.decay=decay
+        self.optimizer_type = Adagrad # RMSprop
+        self.decay = decay
         self.model = self.build_network()
 
 
@@ -42,9 +43,9 @@ class DQN_Agent:
 
         model = Model(inputs=[input_state, input_parameters], outputs=output)
         if self.decay is False:
-            optimizer = RMSprop(lr=self.lr)
+            optimizer = self.optimizer_type(lr=self.lr)
         else:
-            optimizer = RMSprop(lr=self.lr, decay = self.decay)
+            optimizer = self.optimizer_type(lr=self.lr, decay=self.decay)
         return model, optimizer
 
 

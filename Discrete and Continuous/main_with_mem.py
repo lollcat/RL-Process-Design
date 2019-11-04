@@ -41,12 +41,15 @@ CONFIG
 from Env.Simulator_new_reward import Simulator
 allow_submit = True
 reward_n = 1
+decay = True
 
 """
 KEY INPUTS
 """
 alpha = 0.0001
 beta = alpha*10
+max_global_eps = 500000
+
 env = Simulator(allow_submit=allow_submit, metric=reward_n)
 n_continuous_actions = env.continuous_action_space.shape[0]
 n_discrete_actions = env.discrete_action_space.n
@@ -55,10 +58,14 @@ layer1_size = 100
 layer2_size = 50
 layer3_size = 50
 
+if decay is True:
+    param_decay = beta/max_global_eps
+    dqn_decay = alpha/max_global_eps
+else:
+    param_decay = False
+    dqn_decay = False
 
-max_global_eps = 20000
 num_workers = multiprocessing.cpu_count()
-
 global_counter = itertools.count()
 returns_list = []
 
@@ -66,9 +73,9 @@ returns_list = []
 with tf.device('/CPU:0'):
     param_model, param_optimizer = ParameterAgent(beta, n_continuous_actions, state_shape,
                                                   "Param_model", layer1_size=layer1_size,
-                                                  layer2_size=layer2_size, decay=beta/max_global_eps).build_network()
+                                                  layer2_size=layer2_size, decay=param_decay ).build_network()
     dqn_model, dqn_optimizer = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
-                                         layer1_size, layer2_size, layer3_size, decay=alpha/max_global_eps).build_network()
+                                         layer1_size, layer2_size, layer3_size, decay=dqn_decay).build_network()
     #param_model = load_model("param_model.h5")
     #dqn_model = load_model("dqn_model.h5")
     # Create Workers

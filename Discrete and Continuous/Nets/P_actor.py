@@ -14,6 +14,7 @@ class ParameterAgent:
         self.layer1_size = layer1_size
         self.layer2_size = layer2_size
         self.state_shape = state_shape
+        self.optimizer_type = RMSprop
         self.decay = decay
         self.model, self.optimizer = self.build_network()
 
@@ -28,10 +29,9 @@ class ParameterAgent:
         model = Model(inputs=input_state, outputs=output)
 
         if self.decay is False:
-            optimizer = RMSprop(lr=self.lr)
+            optimizer = self.optimizer_type(lr=self.lr)
         else:
-            optimizer = RMSprop(lr=self.lr, decay=self.decay)
-
+            optimizer = self.optimizer_type(lr=self.lr, decay=self.decay)
         return model, optimizer
 
 """
