@@ -7,7 +7,7 @@ import tensorflow as tf
 
 class DQN_Agent:
     def __init__(self, lr, n_discrete_actions, n_continuous_actions, state_shape, name,
-                 layer1_size=64, layer2_size=32, layer3_size=32, n_layers="NA"):
+                 layer1_size=64, layer2_size=32, layer3_size=32, decay=False):
         self.lr = lr
         self.n_discrete_actions = n_discrete_actions
         self.n_continuous_actions = n_continuous_actions
@@ -16,8 +16,9 @@ class DQN_Agent:
         self.layer2_size = layer2_size
         self.layer3_size = layer3_size
         self.state_shape = state_shape
-        self.n_layers = n_layers # not used
+        self.decay=decay
         self.model = self.build_network()
+
 
 
     def build_network(self):
@@ -37,11 +38,13 @@ class DQN_Agent:
         advantage_fc = Dense(self.layer3_size, activation='relu', name='advantage_fc')(dense3)
         advantage = Dense(self.n_discrete_actions, activation='linear')(advantage_fc)
 
-        output = advantage + tf.math.subtract(advantage, tf.math.reduce_mean(advantage, axis=1, keepdims=True))
+        output = value + tf.math.subtract(advantage, tf.math.reduce_mean(advantage, axis=1, keepdims=True))
 
         model = Model(inputs=[input_state, input_parameters], outputs=output)
-        optimizer = RMSprop(lr=self.lr)
-
+        if self.decay is False:
+            optimizer = RMSprop(lr=self.lr)
+        else:
+            optimizer = RMSprop(lr=self.lr, decay = self.decay)
         return model, optimizer
 
 

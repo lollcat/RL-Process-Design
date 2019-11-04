@@ -20,7 +20,7 @@ class Step:  # Stores a step
 
 class Worker:
     def __init__(self, name, global_network_P, global_network_dqn, global_optimizer_P, global_optimizer_dqn,
-                 global_counter, env, max_global_steps, returns_list, gamma=0.99, batch_size=10):
+                 global_counter, env, max_global_steps, returns_list, gamma=0.99, batch_size=10, max_len=200):
         self.name = name
         self.global_network_P = global_network_P
         self.global_network_dqn = global_network_dqn
@@ -43,7 +43,7 @@ class Worker:
         self.local_dqn_model = clone_model(global_network_dqn)
         self.local_dqn_model.set_weights(global_network_dqn.get_weights())
 
-        self.memory = Memory(100)
+        self.memory = Memory(max_len)
         self.batch_size=batch_size
 
     def run(self, coord):
@@ -134,20 +134,19 @@ class Worker:
             self.remember(self.state, action_continuous, action_discrete, reward, next_state, done)
             score += reward
             self.state = next_state
-            self.global_step = next(self.global_counter)
 
-            if done:
-                self.returns_list.append(score)
-                print(f"Worker: {self.name} Score is {score}, global steps {self.global_step}/{self.max_global_steps}")
-                self.state = self.env.reset()
+        self.global_step = next(self.global_counter)
+        self.returns_list.append(score)
+        print(f"Worker: {self.name} Score is {score}, global steps {self.global_step}/{self.max_global_steps}")
+        self.state = self.env.reset()
 
-            if self.max_global_steps/20 % (self.global_step+1) == 0 and self.global_step > 100:
-                print(f'global counter: {self.global_step}/{self.max_global_steps} \n')
-                elapsed_time = time.time() - self.start_time
-                remaining_time = elapsed_time * (self.max_global_steps - self.global_step) / max(self.global_step, 1)
-                print(f'elapsed time: {elapsed_time / 60} min \n remaining time {remaining_time / 60} min \n')
-                running_avg = np.mean(self.returns_list[-100:])
-                print(f'running average is {running_avg}')
+        if self.max_global_steps/20 % (self.global_step+1) == 0 and self.global_step > 100:
+            print(f'global counter: {self.global_step}/{self.max_global_steps} \n')
+            elapsed_time = time.time() - self.start_time
+            remaining_time = elapsed_time * (self.max_global_steps - self.global_step) / max(self.global_step, 1)
+            print(f'elapsed time: {elapsed_time / 60} min \n remaining time {remaining_time / 60} min \n')
+            running_avg = np.mean(self.returns_list[-100:])
+            print(f'running average is {running_avg}')
 
     def remember(self, state, action_continuous, action_discrete, reward, new_state, done):
         done = 1 - done

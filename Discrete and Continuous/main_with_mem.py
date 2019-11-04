@@ -41,8 +41,6 @@ CONFIG
 from Env.Simulator_new_reward import Simulator
 allow_submit = True
 reward_n = 1
-n_layers_DQN = 3
-n_layers_P = n_layers_DQN - 1
 
 """
 KEY INPUTS
@@ -58,7 +56,7 @@ layer2_size = 50
 layer3_size = 50
 
 
-max_global_steps = 100000
+max_global_eps = 20000
 num_workers = multiprocessing.cpu_count()
 
 global_counter = itertools.count()
@@ -68,9 +66,9 @@ returns_list = []
 with tf.device('/CPU:0'):
     param_model, param_optimizer = ParameterAgent(beta, n_continuous_actions, state_shape,
                                                   "Param_model", layer1_size=layer1_size,
-                                                  layer2_size=layer2_size, n_layers=n_layers_P).build_network()
+                                                  layer2_size=layer2_size, decay=beta/max_global_eps).build_network()
     dqn_model, dqn_optimizer = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
-                               layer1_size, layer2_size, layer3_size, n_layers=n_layers_DQN).build_network()
+                                         layer1_size, layer2_size, layer3_size, decay=alpha/max_global_eps).build_network()
     #param_model = load_model("param_model.h5")
     #dqn_model = load_model("dqn_model.h5")
     # Create Workers
@@ -85,8 +83,10 @@ with tf.device('/CPU:0'):
             global_optimizer_dqn=dqn_optimizer,
             global_counter=global_counter,
             env=Simulator(allow_submit=allow_submit, metric=reward_n),
-            max_global_steps=max_global_steps,
-            returns_list=returns_list,)
+            max_global_steps=max_global_eps,
+            returns_list=returns_list,
+            batch_size=15,
+            max_len=150)
         workers.append(worker)
 
 
@@ -100,7 +100,7 @@ print(f'runtime is {run_time/60} min')
 
 for i in range(100):
     env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n)).test()
-    returns_list.append(env.Performance_metric)
+    returns_list.append(env.Performance_metric2)
 print(env.split_order)
 print(env.sep_order)
 print(env.Performance_metric)
