@@ -27,7 +27,7 @@ import itertools
 from Nets.P_actor import ParameterAgent
 #from Nets.DQN import DQN_Agent
 from Nets.DQN_dueling import DQN_Agent
-from Workers.Worker_constrained import Worker
+from Workers.Worker_memory import Worker
 import time
 from Utils.tester import Tester
 from Utils.utils import Plotter, Visualiser
@@ -39,7 +39,7 @@ CONFIG
 """
 #from Env.Simulator_New import Simulator
 from Env.Simulator_new_reward import Simulator
-allow_submit = False
+allow_submit = True
 reward_n = 1
 n_layers_DQN = 3
 n_layers_P = n_layers_DQN - 1
@@ -58,8 +58,7 @@ layer2_size = 50
 layer3_size = 50
 
 
-max_global_steps = 20000 #100000
-steps_per_update = 5
+max_global_steps = 100000
 num_workers = multiprocessing.cpu_count()
 
 global_counter = itertools.count()
@@ -87,8 +86,7 @@ with tf.device('/CPU:0'):
             global_counter=global_counter,
             env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps,
-            returns_list=returns_list,
-            n_steps=steps_per_update)
+            returns_list=returns_list,)
         workers.append(worker)
 
 
@@ -109,17 +107,19 @@ print(env.Performance_metric)
 print(env.Performance_metric2)
 
 plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
+plotter.plot()
+"""
 if env.Performance_metric > plotter.by_lightness:
-    matplotlib.rcParams['figure.dpi'] = 800
-    param_model.save(f"Nets/main/reward{reward_n}/param_model.h5")
-    dqn_model.save(f"Nets/main/reward{reward_n}/dqn_model.h5")
-    reward_data = np.array(returns_list)
-    np.savetxt(f"Data_Plots/main/reward{reward_n}/rewards.csv", reward_data, delimiter=",")
-    plotter.plot(save=True)
-
     BFD = Visualiser(env).visualise()
-    fig1, ax1 = plt.subplots()
-    ax1.imshow(BFD)
-    ax1.axis("off")
-    fig1.savefig(f"Data_Plots/main/reward{reward_n}/BFD.png", bbox_inches='tight')
+    matplotlib.rcParams['figure.dpi'] = 800
+    fig, ax = plt.subplots()
+    ax.imshow(BFD)
+    ax.axis("off")
+    #fig.savefig(f"Data_Plots/With_freeze/reward{reward_n}/freeze_reward{reward_n}allowsubmit{allow_submit}BFD.png", bbox_inches='tight')
+print(env.split_order)
+print(env.sep_order)
+print(env.Performance_metric)
+print(env.Performance_metric2)
 print(f"using reward {reward_n}")
+print(f"submit allow {allow_submit}")
+"""

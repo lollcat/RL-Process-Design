@@ -22,7 +22,8 @@ import multiprocessing
 import concurrent.futures
 import itertools
 from Nets.P_actor import ParameterAgent
-from Nets.DQN import DQN_Agent
+#from Nets.DQN import DQN_Agent
+from Nets.DQN_dueling import DQN_Agent
 from Workers.Worker_constrained import Worker
 from Workers.Worker_onlyDQN import Worker_DQN
 import time
@@ -37,7 +38,7 @@ CONFIG
 """
 #from Env.Simulator_New import Simulator
 from Env.Simulator_new_reward import Simulator
-allow_submit = False
+allow_submit = True
 reward_n = 1
 """
 KEY INPUTS
@@ -53,12 +54,12 @@ layer1_size = 100
 layer2_size = 50
 layer3_size = 50
 max_global_steps = 20000 #100000
-steps_per_update = 3
+steps_per_update = 5
 num_workers = multiprocessing.cpu_count()
 
 global_counter = itertools.count()
 global_counter2 = itertools.count()
-max_global_steps2 = max_global_steps #100000
+max_global_steps2 = max_global_steps
 returns_list = []
 
 # Build Models
@@ -75,7 +76,7 @@ with tf.device('/CPU:0'):
     workers = []
     for worker_id in range(num_workers):
         worker = Worker(
-            name=f'worker {worker_id}',
+            name=worker_id,
             global_network_P=param_model,
             global_network_dqn=dqn_model,
             global_optimizer_P=param_optimizer,
@@ -107,11 +108,11 @@ with tf.device('/CPU:0'):
     workers = []
     for worker_id in range(num_workers):
         worker = Worker_DQN(
-            name=f'worker {worker_id}',
+            name=worker_id,
             global_network_P=param_model,
             global_network_dqn=dqn_model,
             global_optimizer_P=param_optimizer,
-            global_optimizer_dqn=RMSprop(lr=0.001),
+            global_optimizer_dqn=RMSprop(lr=0.0001),
             global_counter=global_counter2,
             env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps2,

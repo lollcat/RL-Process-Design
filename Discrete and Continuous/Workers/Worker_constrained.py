@@ -74,7 +74,10 @@ class Worker:
 
         # get discrete action
         predict_discrete = self.local_dqn_model.predict([state, action_continuous])
-        action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
+        if self.name % 2 == 0:
+            action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
+        else:
+            action_discrete = self.proportion_action(state, predict_discrete)
 
         action_continuous = action_continuous[0]  # take it back to the correct shape
         return action_continuous, action_discrete
@@ -85,17 +88,20 @@ class Worker:
         illegal_actions = self.illegal_actions(state)
         predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
         if random < explore_threshold:
-            """
-            # paper uses uniform distribution
-            discrete_distribution = softmax(predict_discrete)[0]
-            discrete_distribution[illegal_actions] = 0
-            action_discrete = np.random.choice(self.n_discrete_actions, p=discrete_distribution/discrete_distribution.sum())
-            """
             action_discrete = np.random.choice(
                    [i for i in range(self.n_discrete_actions) if illegal_actions[i] == False])
         else:
             action_discrete = np.argmax(predict_discrete)
 
+        return action_discrete
+
+    def proportion_action(self, state, predict_discrete):
+        illegal_actions = self.illegal_actions(state)
+        predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
+        discrete_distribution = softmax(predict_discrete)[0]
+        discrete_distribution[illegal_actions] = 0
+        action_discrete = np.random.choice(self.n_discrete_actions,
+                                           p=discrete_distribution / discrete_distribution.sum())
         return action_discrete
 
     def illegal_actions(self, state):
@@ -105,9 +111,9 @@ class Worker:
         LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
         if self.allow_submit is True:
-            #if self.env.n_outlet_streams > 1:
-            #    LK_legal = np.append(LK_legal, False)
-            #else:
+            if self.env.n_outlet_streams > 1:
+               LK_legal = np.append(LK_legal, False)
+            else:
                 LK_legal = np.append(LK_legal, True)
         return LK_legal
 
@@ -141,7 +147,7 @@ class Worker:
 
         return experience
 
-    #@tf.function
+    @tf.function
     def update_global_parameters(self, experience):
         with tf.device('/CPU:0'):
             target = 0
@@ -154,6 +160,7 @@ class Worker:
             for step in reversed(experience):
                 target = step.reward + self.gamma * target
                 state = step.state[np.newaxis, :]
+                action_continuous = step.action_continuous[np.newaxis, :]
 
                 with tf.GradientTape(persistent=True) as tape:
                     #param part
@@ -162,7 +169,8 @@ class Worker:
                     loss_param = - tf.reduce_sum(Qvalues)
 
                     #dqn part
-                    target_dqn = Qvalues.numpy()
+                    QvaluesDQN = self.local_dqn_model([state, action_continuous])
+                    target_dqn = QvaluesDQN.numpy()
                     target_dqn[:, step.action_discrete] = target
                     target_dqn = tf.convert_to_tensor(target_dqn)
                     loss_dqn = tf.keras.losses.MSE(Qvalues, target_dqn)

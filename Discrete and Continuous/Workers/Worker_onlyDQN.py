@@ -133,7 +133,7 @@ class Worker_DQN:
 
         return experience
 
-    #@tf.function
+    @tf.function
     def update_global_parameters(self, experience):
         with tf.device('/CPU:0'):
             target = 0
