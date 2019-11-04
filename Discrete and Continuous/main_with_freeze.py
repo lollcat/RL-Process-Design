@@ -18,7 +18,6 @@ from tensorflow.keras.backend import set_floatx
 from tensorflow.keras.models import load_model
 set_floatx('float64')
 import numpy as np
-from Env.Simulator_New import Simulator
 import multiprocessing
 import concurrent.futures
 import itertools
@@ -36,6 +35,8 @@ import matplotlib.pyplot as plt
 """
 CONFIG
 """
+from Env.Simulator_New import Simulator
+#from Env.Simulator_new_reward import Simulator
 allow_submit = False
 reward_n = 1
 """
@@ -110,7 +111,7 @@ with tf.device('/CPU:0'):
             global_network_P=param_model,
             global_network_dqn=dqn_model,
             global_optimizer_P=param_optimizer,
-            global_optimizer_dqn=RMSprop(lr=0.0001),
+            global_optimizer_dqn=RMSprop(lr=0.0005),
             global_counter=global_counter2,
             env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps2,
@@ -130,7 +131,10 @@ with tf.device('/CPU:0'):
 
 for i in range(100):
     env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n)).test()
-    returns_list.append(env.Performance_metric)
+    if reward_n is 0:
+        returns_list.append(env.Performance_metric)
+    else:
+        returns_list.append(env.Performance_metric2)
 
 plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
 if env.Performance_metric > plotter.by_lightness:
