@@ -88,6 +88,17 @@ class Simulator:
         action_continuous, action_discrete = action
         if action_discrete == self.discrete_action_size - 1:
             done = True
+            print("end early")
+            self.classify_streams()
+            self.revenue = self.revenue_calculator(self.product_streams)
+            self.Performance_metric = 10 - sum(self.capital_cost) / max(self.revenue, 1) # prevent 0 revenue from effecting things
+            self.Performance_metric2 = (self.revenue - sum(self.capital_cost)/10)/1e7
+
+            if self.metric == 0:
+                reward = max(self.Performance_metric, -10)
+            elif self.metric == 1:
+                reward = max(self.Performance_metric2, -10)
+
             return self.state, reward, done, info
         Light_Key = action_discrete % self.split_option_n
         Selected_stream = int(action_discrete/self.split_option_n)
@@ -114,6 +125,10 @@ class Simulator:
         HK_D = tops[Heavy_Key] / tops.sum()
         LK_B = bots[Light_Key] / bots.sum()
         HK_B = bots[Heavy_Key] / bots.sum()
+        assert LK_D < 1 and LK_D > 0
+        assert LK_B < 1 and LK_B > 0
+        assert HK_D < 1 and HK_D > 0
+        assert HK_B < 1 and HK_B > 0
 
         self.stream_table.append(tops)
         self.stream_table.append(bots)
@@ -171,7 +186,7 @@ class Simulator:
         if done is True:
             self.classify_streams()
             self.revenue = self.revenue_calculator(self.product_streams)
-            self.Performance_metric = 10 - sum(self.capital_cost) / max(self.revenue, 1) # prevent 0 revenue from effecting things
+            self.Performance_metric = 10 - sum(self.capital_cost) / max(self.revenue, 0.01) # prevent 0 revenue from effecting things
             self.Performance_metric2 = (self.revenue - sum(self.capital_cost)/10)/1e7
 
             if self.metric == 0:
@@ -182,7 +197,8 @@ class Simulator:
         return self.state, reward, done, info
 
     def classify_streams(self):
-        for stream in self.state:
+        for i in range(self.n_outlet_streams):
+            stream = self.state[i]
             purity = max(np.divide(stream, stream.sum()))
             recovery = max(np.divide(stream, self.feed))
             stream_is_product = purity > 0.96  # other conditions to add?
@@ -286,6 +302,11 @@ class Simulator:
         LK_legal2 = state[:, 1:] == 0
         LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
+        if self.allow_submit is True:
+            if self.n_outlet_streams > 1:
+                LK_legal = np.append(LK_legal, False)
+            else:
+                LK_legal = np.append(LK_legal, True)
         return LK_legal
 
 """

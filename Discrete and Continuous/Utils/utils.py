@@ -43,10 +43,10 @@ class Plotter:
         plt.ylabel("Reward")
         if freeze_point is False:
             plt.legend(["Average Reward", "Reward", "Flowrate Heuristic", "Volatility heuristic",
-                        "Direct Sequence Heuristic", "Random Average"])
+                        "Boiling Point Heuristic", "Random Average"])
         else:
-            plt.legend(["Average Reward", "Reward", "Flowrate Heuristic", "Volatility Heuristic", "Lightness Heuristic",
-                        "Random Average", "Freeze Point"])
+            plt.legend(["Average Reward", "Reward", "Flowrate Heuristic", "Volatility Heuristic",
+                        "Boiling Point Heuristic", "Random Average", "Freeze Point"])
         if save is True:
             plt.savefig("Data_Plots/RewardvsSteps_" + str(times().user) + ".png", bbox_inches='tight')
         plt.show()
@@ -55,16 +55,18 @@ class Visualiser:
     def __init__(self, env):
         self.env = env
 
-    def visualise(self):
+    def visualise(self, show_feed=True):
         env = self.env
         G = pydot.Dot(graph_type="digraph", rankdir="LR")
         outlet_nodes = []
         nodes = []
         edges = []
         image_list = []
-
-        feed_string = "".join([f"{env.compound_names[i]} {round(env.feed[i])} kmol/h\n"
-                                        for i in range(env.feed.shape[0])])
+        if show_feed is True:
+            feed_string = "".join([f"{env.compound_names[i]} {round(env.feed[i])} kmol/h\n"
+                                            for i in range(env.feed.shape[0])])
+        else:
+            feed_string = " "
         feed_node = pydot.Node(feed_string, shape="square", color="white")
         G.add_node(feed_node)
         for i in range(len(env.sep_order)):

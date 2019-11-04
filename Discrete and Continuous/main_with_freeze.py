@@ -37,14 +37,14 @@ import matplotlib.pyplot as plt
 CONFIG
 """
 allow_submit = False
-reward_n = 0
+reward_n = 1
 """
 KEY INPUTS
 """
 
 alpha = 0.0001
 beta = alpha*10
-env = Simulator(allow_submit=allow_submit, metric=reward_n) #)
+env = Simulator(allow_submit=allow_submit, metric=reward_n)
 n_continuous_actions = env.continuous_action_space.shape[0]
 n_discrete_actions = env.discrete_action_space.n
 state_shape = env.observation_space.shape
@@ -131,10 +131,6 @@ with tf.device('/CPU:0'):
 for i in range(100):
     env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n)).test()
     returns_list.append(env.Performance_metric)
-print(env.split_order)
-print(env.sep_order)
-print(env.Performance_metric)
-print(env.Performance_metric2)
 
 plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
 if env.Performance_metric > plotter.by_lightness:
@@ -150,4 +146,9 @@ if env.Performance_metric > plotter.by_lightness:
     ax.imshow(BFD)
     ax.axis("off")
     fig.savefig(f"Data_Plots/With_freeze/reward{reward_n}/freeze_reward{reward_n}BFD.png", bbox_inches='tight')
+print(env.split_order)
+print(env.sep_order)
+print(env.Performance_metric)
+print(env.Performance_metric2)
 print(f"using reward {reward_n}")
+print(f"submit allow {allow_submit}")

@@ -105,7 +105,10 @@ class Worker:
         LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
         if self.allow_submit is True:
-            LK_legal = np.append(LK_legal, False)
+            #if self.env.n_outlet_streams > 1:
+            #    LK_legal = np.append(LK_legal, False)
+            #else:
+                LK_legal = np.append(LK_legal, True)
         return LK_legal
 
 
