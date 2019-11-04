@@ -1,5 +1,4 @@
 # https://www.udemy.com/course/deep-reinforcement-learning-in-python
-reward_n = 0
 import tensorflow as tf
 #tf.debugging.set_log_device_placement(True)
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -19,7 +18,6 @@ from tensorflow.keras.backend import set_floatx
 from tensorflow.keras.models import load_model
 set_floatx('float64')
 import numpy as np
-from Env.Simulator_New import Simulator
 import multiprocessing
 import concurrent.futures
 import itertools
@@ -34,13 +32,20 @@ from tensorflow.keras.optimizers import RMSprop
 import matplotlib
 import matplotlib.pyplot as plt
 
-
+"""
+CONFIG
+"""
+#from Env.Simulator_New import Simulator
+from Env.Simulator_new_reward import Simulator
+allow_submit = False
+reward_n = 1
 """
 KEY INPUTS
 """
+
 alpha = 0.0001
 beta = alpha*10
-env = Simulator()
+env = Simulator(allow_submit=allow_submit, metric=reward_n)
 n_continuous_actions = env.continuous_action_space.shape[0]
 n_discrete_actions = env.discrete_action_space.n
 state_shape = env.observation_space.shape
@@ -48,7 +53,7 @@ layer1_size = 100
 layer2_size = 50
 layer3_size = 50
 max_global_steps = 20000 #100000
-steps_per_update = 6
+steps_per_update = 3
 num_workers = multiprocessing.cpu_count()
 
 global_counter = itertools.count()
@@ -76,7 +81,7 @@ with tf.device('/CPU:0'):
             global_optimizer_P=param_optimizer,
             global_optimizer_dqn=dqn_optimizer,
             global_counter=global_counter,
-            env=Simulator(metric=reward_n),
+            env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps,
             returns_list=returns_list,
             n_steps=steps_per_update)
@@ -106,9 +111,9 @@ with tf.device('/CPU:0'):
             global_network_P=param_model,
             global_network_dqn=dqn_model,
             global_optimizer_P=param_optimizer,
-            global_optimizer_dqn=RMSprop(lr=0.0001),
+            global_optimizer_dqn=RMSprop(lr=0.001),
             global_counter=global_counter2,
-            env=Simulator(metric=reward_n),
+            env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps2,
             returns_list=returns_list,
             n_steps=steps_per_update)
@@ -124,28 +129,31 @@ with tf.device('/CPU:0'):
     print(f'runtime part 2 is {run_time2/60} min')
 
 
-plotter = Plotter(returns_list, len(returns_list)-1, metric=reward_n)
-plotter.plot(freeze_point=freeze_point)
-
-env = Tester(param_model, dqn_model, Simulator()).test()
 for i in range(100):
-    env = Tester(param_model, dqn_model, Simulator()).test()
-    returns_list.append(env.Performance_metric)
-print(env.split_order)
-print(env.sep_order)
+    env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n)).test()
+    if reward_n is 0:
+        returns_list.append(env.Performance_metric)
+    else:
+        returns_list.append(env.Performance_metric2)
 
+plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
 if env.Performance_metric > plotter.by_lightness:
     param_model.save(f"Nets/With_freeze/reward{reward_n}/param_model.h5")
     dqn_model.save(f"Nets/With_freeze/reward{reward_n}/dqn_model.h5")
     reward_data = np.array(returns_list)
     np.savetxt(f"Data_Plots/With_freeze/reward{reward_n}/rewards.csv", reward_data, delimiter=",")
-    plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
     plotter.plot(save=True, freeze_point=freeze_point)
+    #plotter.plot(freeze_point=freeze_point)
 
     BFD = Visualiser(env).visualise()
     matplotlib.rcParams['figure.dpi'] = 800
     fig, ax = plt.subplots()
     ax.imshow(BFD)
     ax.axis("off")
-    fig.savefig(f"Data_Plots/With_freeze/reward{reward_n}/freeze_reward{reward_n}BFD.png", bbox_inches='tight')
+    fig.savefig(f"Data_Plots/With_freeze/reward{reward_n}/freeze_reward{reward_n}allowsubmit{allow_submit}BFD.png", bbox_inches='tight')
+print(env.split_order)
+print(env.sep_order)
+print(env.Performance_metric)
+print(env.Performance_metric2)
 print(f"using reward {reward_n}")
+print(f"submit allow {allow_submit}")

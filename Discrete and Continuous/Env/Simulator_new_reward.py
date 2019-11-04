@@ -5,22 +5,9 @@ from Env.Sizing.column_sizing import columnsize
 from Env.Sizing.dc_annual_cost import DCoperationcost
 from Env.Sizing.dc_capital_cost import expensiveDC
 
-"""  Natural Gas Problem
-        self.compound_names = ["Methane", "Ethane", "Propane", "Isobutane", "Butane",  "Pentane+"]
-        Molar_weights = np.array([16.043, 30.07, 44.097, 58.124, 58.124, 72.151])
-        Heating_value = np.array([55.6,  51.9, 50.4, 49.5, 49.4,   55.2]) #MJ/kg
-        Price_per_MBtu = np.array([2.83, 2.54, 4.27, 5.79, 5.31,  10.41])  #  $/Million Btu  # TODO update for methane
-        
-                # Anotoine data from YAWS
-        self.Antoine_a1 = np.array([6.84566, 6.95335, 7.01887, 6.93388, 7.00961,  7.00877])
-        self.Antoine_a2 = np.array([435.621, 699.106, 889.864, 953.92, 1022.48,  1134.15 ])
-        self.Antoine_a3 = np.array([271.361, 260.264, 257.084, 247.077, 248.145,  238.678])
-        self.initial_state = np.array([0.75, 0.15, 0.1, 0.01, 0.02,  0.03])*5269 # Flowrates kmol/hr
-        self.product_prices = Molar_weights*Heating_value*1000/1.055*Price_per_MBtu/1000000*exchange_rate
-"""
-
 class Simulator:
-    def __init__(self, metric=0, allow_submit=False):
+
+    def __init__(self, metric=1, allow_submit=False):
         self.allow_submit = allow_submit
         self.metric = metric
         # Compound Data
@@ -87,17 +74,9 @@ class Simulator:
         if action_discrete == self.discrete_action_size - 1:
             done = True
             print("end early")
-            self.classify_streams()
-            self.revenue = self.revenue_calculator(self.product_streams)
-            self.Performance_metric = 10 - sum(self.capital_cost) / max(self.revenue, 1) # prevent 0 revenue from effecting things
-            self.Performance_metric2 = (self.revenue - sum(self.capital_cost)/10)/1e7
-
-            if self.metric == 0:
-                reward = max(self.Performance_metric, -10)
-            elif self.metric == 1:
-                reward = max(self.Performance_metric2, -10)
-
+            reward = 0
             return self.state, reward, done, info
+
         Light_Key = action_discrete % self.split_option_n
         Selected_stream = int(action_discrete/self.split_option_n)
         LK_split = self.action_continuous_definer(action_continuous)
@@ -181,16 +160,18 @@ class Simulator:
         if self.n_outlet_streams >= self.max_outlet_streams:  # episode ends after max number of streams produced
             done = True
 
-        if done is True:
-            self.classify_streams()
-            self.revenue = self.revenue_calculator(self.product_streams)
-            self.Performance_metric = 10 - sum(self.capital_cost) / max(self.revenue, 0.01) # prevent 0 revenue from effecting things
-            self.Performance_metric2 = (self.revenue - sum(self.capital_cost)/10)/1e7
+        previous_Performance_metric = self.Performance_metric
+        previous_Performance_metric2 = self.Performance_metric2
+        self.product_streams = []
+        self.classify_streams()
+        self.revenue = self.revenue_calculator(self.product_streams)
+        self.Performance_metric = 10 - sum(self.capital_cost) / max(self.revenue, 0.01) # prevent 0 revenue from effecting things
+        self.Performance_metric2 = (self.revenue - sum(self.capital_cost)/10)/1e7
 
-            if self.metric == 0:
-                reward = max(self.Performance_metric, -10)
-            elif self.metric == 1:
-                reward = max(self.Performance_metric2, -10)
+        if self.metric == 0:
+            reward = max(self.Performance_metric - previous_Performance_metric, -10)
+        elif self.metric == 1:
+            reward = max(self.Performance_metric2 - previous_Performance_metric2, -10)
 
         return self.state, reward, done, info
 
