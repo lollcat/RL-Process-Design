@@ -35,8 +35,8 @@ import matplotlib.pyplot as plt
 """
 CONFIG
 """
-from Env.Simulator_New import Simulator
-#from Env.Simulator_new_reward import Simulator
+#from Env.Simulator_New import Simulator
+from Env.Simulator_new_reward import Simulator
 allow_submit = False
 reward_n = 1
 """
@@ -53,7 +53,7 @@ layer1_size = 100
 layer2_size = 50
 layer3_size = 50
 max_global_steps = 20000 #100000
-steps_per_update = 6
+steps_per_update = 3
 num_workers = multiprocessing.cpu_count()
 
 global_counter = itertools.count()
@@ -111,7 +111,7 @@ with tf.device('/CPU:0'):
             global_network_P=param_model,
             global_network_dqn=dqn_model,
             global_optimizer_P=param_optimizer,
-            global_optimizer_dqn=RMSprop(lr=0.0005),
+            global_optimizer_dqn=RMSprop(lr=0.001),
             global_counter=global_counter2,
             env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps2,
@@ -143,13 +143,14 @@ if env.Performance_metric > plotter.by_lightness:
     reward_data = np.array(returns_list)
     np.savetxt(f"Data_Plots/With_freeze/reward{reward_n}/rewards.csv", reward_data, delimiter=",")
     plotter.plot(save=True, freeze_point=freeze_point)
+    #plotter.plot(freeze_point=freeze_point)
 
     BFD = Visualiser(env).visualise()
     matplotlib.rcParams['figure.dpi'] = 800
     fig, ax = plt.subplots()
     ax.imshow(BFD)
     ax.axis("off")
-    fig.savefig(f"Data_Plots/With_freeze/reward{reward_n}/freeze_reward{reward_n}BFD.png", bbox_inches='tight')
+    fig.savefig(f"Data_Plots/With_freeze/reward{reward_n}/freeze_reward{reward_n}allowsubmit{allow_submit}BFD.png", bbox_inches='tight')
 print(env.split_order)
 print(env.sep_order)
 print(env.Performance_metric)

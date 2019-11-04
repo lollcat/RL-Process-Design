@@ -10,6 +10,7 @@ class Plotter:
     def __init__(self, score_history, episodes, metric=0):
         self.score_history = score_history
         self.episodes = episodes + 1
+        self.metric = metric
         if episodes < 100:
             raise ValueError("Not enough episodes")
         if metric is 0:
@@ -48,7 +49,10 @@ class Plotter:
             plt.legend(["Average Reward", "Reward", "Flowrate Heuristic", "Volatility Heuristic",
                         "Boiling Point Heuristic", "Random Average", "Freeze Point"])
         if save is True:
-            plt.savefig("Data_Plots/RewardvsSteps_" + str(times().user) + ".png", bbox_inches='tight')
+            if freeze_point is True:
+                plt.savefig(f"Data_Plots/With_freeze/reward{self.metric}/RewardvsSteps_" + str(times().user) + ".png", bbox_inches='tight')
+            else:
+                plt.savefig("Data_Plots/main/reward{self.metric}/RewardvsSteps_" + str(times().user) + ".png", bbox_inches='tight')
         plt.show()
 
 class Visualiser:
