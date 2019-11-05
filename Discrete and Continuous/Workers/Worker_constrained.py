@@ -20,7 +20,8 @@ class Step:  # Stores a step
 
 class Worker:
     def __init__(self, name, global_network_P, global_network_dqn, global_optimizer_P, global_optimizer_dqn,
-                 global_counter, env, max_global_steps, returns_list, n_steps=10, gamma=0.99):
+                 global_counter, env, max_global_steps, returns_list, multiple_explore=False, freeze=False,
+                 n_steps=10, gamma=0.99):
         self.name = name
         self.global_network_P = global_network_P
         self.global_network_dqn = global_network_dqn
@@ -29,6 +30,8 @@ class Worker:
         self.global_counter = global_counter
         self.env = env
         self.allow_submit = env.allow_submit
+        self.multiple_explore = multiple_explore
+        self.freeze = freeze
         self.state = self.env.reset()
         self.max_global_steps = max_global_steps
         self.global_step = 0
@@ -50,7 +53,10 @@ class Worker:
                 # Collect some experience
                 experience = self.run_n_steps()
                 # Update the global networks using local gradients
-                self.update_global_parameters(experience)
+                if self.freeze is False:
+                    self.update_global_parameters(experience)
+                else:
+                    self.update_global_parameters_freeze(experience)
 
                 # Stop once the max number of global steps has been reached
                 if self.max_global_steps is not None and self.global_step >= self.max_global_steps:
@@ -66,18 +72,22 @@ class Worker:
         state = state[np.newaxis, :]
         # get continuous action
         mu = self.local_param_model.predict(state)  # returns list of list so get 0 ith element later on
-        noise = self.noise()
-        mu_prime = mu + noise
-        action_continuous = min(mu_prime, np.array([[0.999]]))  # cannot have a split above 1
-        assert action_continuous.shape == (1, 1)  # need this shape to run through actor_DQN
-        # TODO this will need to be generalised by adding self.n_continuous_actions
+        if self.freeze is False:
+            noise = self.noise()
+            mu_prime = mu + noise
+            action_continuous = min(mu_prime, np.array([[0.999]]))  # cannot have a split above 1
+        else:
+            action_continuous = mu
 
         # get discrete action
         predict_discrete = self.local_dqn_model.predict([state, action_continuous])
-        if self.name % 2 == 0:
+        if self.multiple_explore is False:
             action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
         else:
-            action_discrete = self.proportion_action(state, predict_discrete)
+            if self.name % 2 == 0:
+                action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
+            else:
+                action_discrete = self.proportion_action(state, predict_discrete, current_step, stop_step)
 
         action_continuous = action_continuous[0]  # take it back to the correct shape
         return action_continuous, action_discrete
@@ -95,13 +105,18 @@ class Worker:
 
         return action_discrete
 
-    def proportion_action(self, state, predict_discrete):
+    def proportion_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.05):
+        explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
+        random = np.random.rand()
         illegal_actions = self.illegal_actions(state)
         predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
-        discrete_distribution = softmax(predict_discrete)[0]
-        discrete_distribution[illegal_actions] = 0
-        action_discrete = np.random.choice(self.n_discrete_actions,
-                                           p=discrete_distribution / discrete_distribution.sum())
+        if random < explore_threshold:
+            discrete_distribution = softmax(predict_discrete)[0]
+            discrete_distribution[illegal_actions] = 0
+            action_discrete = np.random.choice(self.n_discrete_actions,
+                                               p=discrete_distribution / discrete_distribution.sum())
+        else:
+            action_discrete = np.argmax(predict_discrete)
         return action_discrete
 
     def illegal_actions(self, state):
@@ -147,7 +162,7 @@ class Worker:
 
         return experience
 
-    @tf.function
+    #@tf.function
     def update_global_parameters(self, experience):
         with tf.device('/CPU:0'):
             target = 0
@@ -161,39 +176,75 @@ class Worker:
                 target = step.reward + self.gamma * target
                 state = step.state[np.newaxis, :]
                 action_continuous = step.action_continuous[np.newaxis, :]
+                action_discrete = step.action_discrete
 
-                with tf.GradientTape(persistent=True) as tape:
-                    #param part
-                    predict_param = self.local_param_model(state)
-                    Qvalues = self.local_dqn_model([state, predict_param])
-                    loss_param = - tf.reduce_sum(Qvalues)
-
-                    #dqn part
-                    QvaluesDQN = self.local_dqn_model([state, action_continuous])
-                    target_dqn = QvaluesDQN.numpy()
-                    target_dqn[:, step.action_discrete] = target
-                    target_dqn = tf.convert_to_tensor(target_dqn)
-                    loss_dqn = tf.keras.losses.MSE(Qvalues, target_dqn)
-                    # get gradients of loss with respect to the param_model weights
-                gradient_param = tape.gradient(loss_param, self.local_param_model.trainable_weights)
-                gradient_param = [tf.clip_by_norm(grad, 5) for grad in gradient_param]
-
-                gradient_dqn = tape.gradient(loss_dqn, self.local_dqn_model.trainable_weights)
-                gradient_dqn = [tf.clip_by_norm(grad, 5) for grad in gradient_dqn]
-
-                if accumulated_param_gradients == 0:
-                    accumulated_param_gradients = gradient_param
-                    accumulated_dqn_gradients = gradient_dqn
+                if self.freeze is False:
+                    gradient_param, gradient_dqn = self.get_gradient(state, target, action_continuous, action_discrete)
+                    if accumulated_dqn_gradients == 0:
+                        accumulated_param_gradients = gradient_param
+                        accumulated_dqn_gradients = gradient_dqn
+                    else:
+                        accumulated_param_gradients = [tf.add(accumulated_param_gradients[i], gradient_param[i])
+                                                       for i in range(len(gradient_param))]
+                        accumulated_dqn_gradients = [tf.add(accumulated_dqn_gradients[i], gradient_dqn[i])
+                                                     for i in range(len(gradient_dqn))]
                 else:
-                    accumulated_param_gradients = [tf.add(accumulated_param_gradients[i], gradient_param[i])
-                                                   for i in range(len(gradient_param))]
-                    accumulated_dqn_gradients = [tf.add(accumulated_dqn_gradients[i], gradient_dqn[i])
-                                                   for i in range(len(gradient_dqn))]
+                    gradient_dqn = self.get_gradientDQN(state, target, action_continuous, action_discrete)
+
+                    if accumulated_dqn_gradients == 0:
+                        accumulated_dqn_gradients = gradient_dqn
+                    else:
+                        accumulated_dqn_gradients = [tf.add(accumulated_dqn_gradients[i], gradient_dqn[i])
+                                                     for i in range(len(gradient_dqn))]
+
+            self.update_all_weights(accumulated_dqn_gradients, accumulated_param_gradients)
+            return
+
+    #@tf.function
+    def get_gradient(self, state, target, action_continuous, action_discrete):
+        with tf.GradientTape(persistent=True) as tape:
+            # param part
+            predict_param = self.local_param_model(state)
+            Qvalues = self.local_dqn_model([state, predict_param])
+            loss_param = - tf.reduce_sum(Qvalues)
+
+            # dqn part
+            QvaluesDQN = self.local_dqn_model([state, action_continuous])
+            target_dqn = QvaluesDQN.numpy()
+            target_dqn[:, action_discrete] = target
+            target_dqn = tf.convert_to_tensor(target_dqn)
+            loss_dqn = tf.keras.losses.MSE(QvaluesDQN, target_dqn)
+            # get gradients of loss with respect to the param_model weights
+        gradient_param = tape.gradient(loss_param, self.local_param_model.trainable_weights)
+        gradient_param = [tf.clip_by_norm(grad, 5) for grad in gradient_param]
+
+        gradient_dqn = tape.gradient(loss_dqn, self.local_dqn_model.trainable_weights)
+        gradient_dqn = [tf.clip_by_norm(grad, 5) for grad in gradient_dqn]
+
+        return gradient_param, gradient_dqn
+
+    def get_gradientDQN(self, state, target, action_continuous, action_discrete):
+        with tf.GradientTape(persistent=True) as tape:
+            QvaluesDQN = self.local_dqn_model([state, action_continuous])
+            target_dqn = QvaluesDQN.numpy()
+            target_dqn[:, action_discrete] = target
+            target_dqn = tf.convert_to_tensor(target_dqn)
+            loss_dqn = tf.keras.losses.MSE(QvaluesDQN, target_dqn)
+        gradient_dqn = tape.gradient(loss_dqn, self.local_dqn_model.trainable_weights)
+        gradient_dqn = [tf.clip_by_norm(grad, 5) for grad in gradient_dqn]
+        return gradient_dqn
+
+    #@tf.function
+    def update_all_weights(self, accumulated_dqn_gradients, accumulated_param_gradients):
+        self.global_optimizer_dqn.apply_gradients(zip(accumulated_dqn_gradients,
+                                                      self.global_network_dqn.trainable_weights))
+        self.local_dqn_model.set_weights(self.global_network_dqn.get_weights())
+        if accumulated_param_gradients is 0:
+            return
+        else:
             # update global nets
             self.global_optimizer_P.apply_gradients(zip(accumulated_param_gradients,
                                                         self.global_network_P.trainable_weights))
-            self.global_optimizer_dqn.apply_gradients(zip(accumulated_dqn_gradients,
-                                                        self.global_network_dqn.trainable_weights))
             # update local nets
             self.local_param_model.set_weights(self.global_network_P.get_weights())
-            self.local_dqn_model.set_weights(self.global_network_dqn.get_weights())
+            return

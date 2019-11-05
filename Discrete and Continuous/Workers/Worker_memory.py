@@ -75,10 +75,13 @@ class Worker:
 
         # get discrete action
         predict_discrete = self.local_dqn_model.predict([state, action_continuous])
+        action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
+        """
         if self.name % 2 == 0:
             action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
         else:
             action_discrete = self.proportion_action(state, predict_discrete, current_step, stop_step)
+        """
 
         action_continuous = action_continuous[0]  # take it back to the correct shape
         return action_continuous, action_discrete
@@ -152,7 +155,7 @@ class Worker:
         done = 1 - done
         self.memory.add((state, action_continuous, action_discrete, reward, new_state, done))
 
-    @tf.function
+    #@tf.function
     def update_global_parameters(self):
         with tf.device('/CPU:0'):
             if len(self.memory.buffer) < self.batch_size:  # first fill memory
@@ -182,11 +185,7 @@ class Worker:
 
                     # get gradients of loss with respect to the param_model weights
             gradient_param = tape.gradient(loss_param, self.local_param_model.trainable_weights)
-            gradient_param = [tf.clip_by_norm(grad, 5) for grad in gradient_param]
-
             gradient_dqn = tape.gradient(loss_dqn, self.local_dqn_model.trainable_weights)
-            gradient_dqn = [tf.clip_by_norm(grad, 5) for grad in gradient_dqn]
-
 
             # update global nets
             self.global_optimizer_P.apply_gradients(zip(gradient_param,
@@ -196,3 +195,5 @@ class Worker:
             # update local nets
             self.local_param_model.set_weights(self.global_network_P.get_weights())
             self.local_dqn_model.set_weights(self.global_network_dqn.get_weights())
+
+

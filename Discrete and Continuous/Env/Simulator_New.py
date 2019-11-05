@@ -276,7 +276,7 @@ class Simulator:
 
     def Kvalues_calculator(self, temperature, system_pressure):
         vapour_pressure = self.vapour_pressure_calculator(temperature)
-        Kvalues = vapour_pressure/ system_pressure
+        Kvalues = vapour_pressure / system_pressure
         return Kvalues
 
     def revenue_calculator(self, product_streams):

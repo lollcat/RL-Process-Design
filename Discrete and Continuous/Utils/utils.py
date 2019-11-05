@@ -4,13 +4,17 @@ from os import times
 from IPython.display import Image
 import pydot
 import imageio
-import string
+
+
+
 
 class Plotter:
-    def __init__(self, score_history, episodes, metric=0):
+    def __init__(self, score_history, episodes, config_string, metric=0, freeze_point=False):
+        self.config = config_string
         self.score_history = score_history
         self.episodes = episodes + 1
         self.metric = metric
+        self.freeze_point = freeze_point
         if episodes < 100:
             raise ValueError("Not enough episodes")
         if metric is 0:
@@ -28,7 +32,8 @@ class Plotter:
         cumsum = np.cumsum(np.insert(x, 0, 0))
         return (cumsum[N:] - cumsum[:-N]) / N
 
-    def plot(self, save=False, freeze_point=False):
+    def plot(self, save=False):
+        freeze_point = self.freeze_point
         episodes = np.arange(self.episodes)
         smoothed_rews = self.running_mean(self.score_history, 100)
         plt.plot(episodes[-len(smoothed_rews):], smoothed_rews, color="blue")
@@ -50,9 +55,9 @@ class Plotter:
                         "Boiling Point Heuristic", "Random Average", "Freeze Point"])
         if save is True:
             if freeze_point is True:
-                plt.savefig(f"Data_Plots/With_freeze/reward{self.metric}/RewardvsSteps_" + str(times().user) + ".png", bbox_inches='tight')
+                plt.savefig(f"Data_Plots/{self.config}_learn_" + str(times().user) + ".png", bbox_inches='tight')
             else:
-                plt.savefig("Data_Plots/main/reward{self.metric}/RewardvsSteps_" + str(times().user) + ".png", bbox_inches='tight')
+                plt.savefig(f"Data_Plots/{self.config}_learn_" + str(times().user) + ".png", bbox_inches='tight')
         plt.show()
 
 class Visualiser:

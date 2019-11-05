@@ -16,7 +16,7 @@ class DQN_Agent:
         self.layer2_size = layer2_size
         self.layer3_size = layer3_size
         self.state_shape = state_shape
-        self.optimizer_type = Adagrad # RMSprop
+        self.optimizer_type = RMSprop
         self.decay = decay
         self.model = self.build_network()
 

@@ -36,9 +36,9 @@ import matplotlib.pyplot as plt
 """
 CONFIG
 """
-#from Env.Simulator_New import Simulator
-from Env.Simulator_new_reward import Simulator
-allow_submit = True
+from Env.Simulator_New import Simulator
+#from Env.Simulator_new_reward import Simulator
+allow_submit = False
 reward_n = 1
 """
 KEY INPUTS
@@ -53,7 +53,7 @@ state_shape = env.observation_space.shape
 layer1_size = 100
 layer2_size = 50
 layer3_size = 50
-max_global_steps = 20000 #100000
+max_global_steps = 20000 # 100000
 steps_per_update = 5
 num_workers = multiprocessing.cpu_count()
 

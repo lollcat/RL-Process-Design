@@ -37,18 +37,18 @@ import matplotlib.pyplot as plt
 """
 CONFIG
 """
-#from Env.Simulator_New import Simulator
-from Env.Simulator_new_reward import Simulator
-allow_submit = True
+from Env.Simulator_New import Simulator
+#from Env.Simulator_new_reward import Simulator
+allow_submit = False
 reward_n = 1
-decay = True
+decay = False
 
 """
 KEY INPUTS
 """
 alpha = 0.0001
 beta = alpha*10
-max_global_eps = 500000
+max_global_eps = 10000
 
 env = Simulator(allow_submit=allow_submit, metric=reward_n)
 n_continuous_actions = env.continuous_action_space.shape[0]
@@ -73,7 +73,7 @@ returns_list = []
 with tf.device('/CPU:0'):
     param_model, param_optimizer = ParameterAgent(beta, n_continuous_actions, state_shape,
                                                   "Param_model", layer1_size=layer1_size,
-                                                  layer2_size=layer2_size, decay=param_decay ).build_network()
+                                                  layer2_size=layer2_size, decay=param_decay).build_network()
     dqn_model, dqn_optimizer = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
                                          layer1_size, layer2_size, layer3_size, decay=dqn_decay).build_network()
     #param_model = load_model("param_model.h5")

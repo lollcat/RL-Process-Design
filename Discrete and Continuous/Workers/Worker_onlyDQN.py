@@ -18,7 +18,7 @@ class Step:  # Stores a step
 
 class Worker_DQN:
     def __init__(self, name, global_network_P, global_network_dqn, global_optimizer_P, global_optimizer_dqn,
-                 global_counter, env, max_global_steps, returns_list, n_steps=10, gamma=0.99):
+                 global_counter, env, max_global_steps, returns_list,  n_steps=10, gamma=0.99):
         self.name = name
         self.global_network_P = global_network_P
         self.global_network_dqn = global_network_dqn
@@ -69,6 +69,7 @@ class Worker_DQN:
 
         # get discrete action
         predict_discrete = self.local_dqn_model.predict([state, action_continuous])
+
         action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
 
         action_continuous = action_continuous[0]  # take it back to the correct shape
@@ -133,7 +134,7 @@ class Worker_DQN:
 
         return experience
 
-    @tf.function
+    #@tf.function
     def update_global_parameters(self, experience):
         with tf.device('/CPU:0'):
             target = 0

@@ -18,6 +18,7 @@ if gpus:
 
 from tensorflow.keras.backend import set_floatx
 from tensorflow.keras.models import load_model
+from tensorflow.keras.optimizers import RMSprop
 set_floatx('float64')
 import numpy as np
 from Env.Simulator_New import Simulator
@@ -25,28 +26,48 @@ import multiprocessing
 import concurrent.futures
 import itertools
 from Nets.P_actor import ParameterAgent
-#from Nets.DQN import DQN_Agent
-from Nets.DQN_dueling import DQN_Agent
 from Workers.Worker_constrained import Worker
 import time
 from Utils.tester import Tester
 from Utils.utils import Plotter, Visualiser
 import matplotlib
 import matplotlib.pyplot as plt
-
+import re
 """
 CONFIG
 """
-#from Env.Simulator_New import Simulator
-from Env.Simulator_new_reward import Simulator
+new_architecture = False
+multiple_explore = False
+freeze_point = True
 allow_submit = False
 reward_n = 1
-n_layers_DQN = 3
-n_layers_P = n_layers_DQN - 1
+decay = False
+sparse_reward = True
+dueling_layer = True
+config = f"Config: \n freeze:{freeze_point} \n reward {reward_n} \n " \
+         f"submit:{allow_submit} \n decay{decay} \n sparse:{sparse_reward} \n explore{multiple_explore}"
+config_string = re.sub("\n", "", config)
+config_string = re.sub(" ", "", config_string)
+config_string = re.sub(":", "_", config_string)
+
+"""Imports depending on config"""
+if sparse_reward is True:
+    from Env.Simulator_New import Simulator
+else:
+    from Env.Simulator_new_reward import Simulator
+
+if new_architecture is True:
+    from Nets.DQN_dueling_new_structure import DQN_Agent
+elif dueling_layer is True and new_architecture:
+    from Nets.DQN_dueling import DQN_Agent
+else:
+    from Nets.DQN import DQN_Agent
 
 """
 KEY INPUTS
 """
+max_global_steps = 1000
+
 alpha = 0.0001
 beta = alpha*10
 env = Simulator(allow_submit=allow_submit, metric=reward_n)
@@ -57,21 +78,32 @@ layer1_size = 100
 layer2_size = 50
 layer3_size = 50
 
-
-max_global_steps = 20000 #100000
 steps_per_update = 5
 num_workers = multiprocessing.cpu_count()
-
 global_counter = itertools.count()
 returns_list = []
 
+"""More stuff dependant on config"""
+if freeze_point is True:
+    global_counter2 = itertools.count()
+    max_global_steps2 = max_global_steps*2
+
+if decay is True:
+    param_decay = beta / max_global_eps
+    dqn_decay = alpha / max_global_eps
+else:
+    param_decay = False
+    dqn_decay = False
+
+"""GO GO GO"""
+# Build Models
 # Build Models
 with tf.device('/CPU:0'):
     param_model, param_optimizer = ParameterAgent(beta, n_continuous_actions, state_shape,
-                                                  "Param_model", layer1_size=layer1_size,
-                                                  layer2_size=layer2_size, n_layers=n_layers_P).build_network()
+                                                                    "Param_model", layer1_size=layer1_size,
+                                                                    layer2_size=layer2_size).build_network()
     dqn_model, dqn_optimizer = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
-                               layer1_size, layer2_size, layer3_size, n_layers=n_layers_DQN).build_network()
+                               layer1_size, layer2_size, layer3_size).build_network()
     #param_model = load_model("param_model.h5")
     #dqn_model = load_model("dqn_model.h5")
     # Create Workers
@@ -88,6 +120,7 @@ with tf.device('/CPU:0'):
             env=Simulator(allow_submit=allow_submit, metric=reward_n),
             max_global_steps=max_global_steps,
             returns_list=returns_list,
+            multiple_explore=multiple_explore,
             n_steps=steps_per_update)
         workers.append(worker)
 
@@ -97,29 +130,71 @@ with tf.device('/CPU:0'):
     with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
         executor.map(worker_fn, workers, timeout=10)
 
-run_time = time.time() - start_time
-print(f'runtime is {run_time/60} min')
+    run_time = time.time() - start_time
+    print(f'runtime part 1 is {run_time/60} min')
+
+    if freeze_point is True:
+        freeze_point = len(returns_list)
+        """
+        NOW DQN WITH PARAM NET FROZEN
+        """
+        # now keep param constant
+        # Create Workers
+        start_time = time.time()
+        workers = []
+        for worker_id in range(num_workers):
+            worker = Worker(
+                name=worker_id,
+                global_network_P=param_model,
+                global_network_dqn=dqn_model,
+                global_optimizer_P=param_optimizer,
+                global_optimizer_dqn=RMSprop(lr=alpha*10),
+                global_counter=global_counter2,
+                env=Simulator(allow_submit=allow_submit, metric=reward_n),
+                max_global_steps=max_global_steps2,
+                returns_list=returns_list,
+                multiple_explore=multiple_explore,
+                freeze=True,
+                n_steps=steps_per_update)
+            workers.append(worker)
+
+
+        coord = tf.train.Coordinator()
+        worker_fn = lambda worker_: worker_.run(coord)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            executor.map(worker_fn, workers, timeout=10)
+
+        run_time2 = time.time() - start_time
+        print(f'runtime part 2 is {run_time2/60} min')
+
 
 for i in range(100):
     env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n)).test()
-    returns_list.append(env.Performance_metric)
-print(env.split_order)
-print(env.sep_order)
-print(env.Performance_metric)
-print(env.Performance_metric2)
+    if reward_n is 0:
+        returns_list.append(env.Performance_metric)
+    else:
+        returns_list.append(env.Performance_metric2)
 
-plotter = Plotter(returns_list, len(returns_list) - 1, metric=reward_n)
+
+plotter = Plotter(returns_list, len(returns_list) - 1, config_string, metric=reward_n, freeze_point=freeze_point)
 if env.Performance_metric > plotter.by_lightness:
     matplotlib.rcParams['figure.dpi'] = 800
-    param_model.save(f"Nets/main/reward{reward_n}/param_model.h5")
-    dqn_model.save(f"Nets/main/reward{reward_n}/dqn_model.h5")
-    reward_data = np.array(returns_list)
-    np.savetxt(f"Data_Plots/main/reward{reward_n}/rewards.csv", reward_data, delimiter=",")
     plotter.plot(save=True)
 
     BFD = Visualiser(env).visualise()
     fig1, ax1 = plt.subplots()
     ax1.imshow(BFD)
     ax1.axis("off")
-    fig1.savefig(f"Data_Plots/main/reward{reward_n}/BFD.png", bbox_inches='tight')
-print(f"using reward {reward_n}")
+    fig1.savefig(f"Data_Plots/{config_string}BFD.png", bbox_inches='tight')
+
+
+print(env.split_order)
+print(env.sep_order)
+print(env.Performance_metric)
+print(env.Performance_metric2)
+print(config)
+
+"""
+param_model.save("Nets/param_model.h5")
+dqn_model.save("Nets/dqn_model.h5")
+"""

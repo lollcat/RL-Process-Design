@@ -27,7 +27,7 @@ class DQN_Agent:
         inputs = Concatenate(name="concat")([flat_input_state, flat_input_parameters])
 
         dense1 = Dense(self.layer1_size, activation='relu', name="dense1")(inputs)
-        dense2 = Dense(self.layer2_size, activation= 'relu', name="dense2")(dense1)
+        dense2 = Dense(self.layer2_size, activation='relu', name="dense2")(dense1)
         dense3 = Dense(self.layer3_size, activation='relu', name="dense3")(dense2)
         if self.n_layers == 4:
             dense4 = Dense(self.layer3_size, activation='relu', name="dense4")(dense3)
