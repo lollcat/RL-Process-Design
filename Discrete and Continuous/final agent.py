@@ -36,23 +36,31 @@ import re
 """
 CONFIG
 """
+max_global_steps = 60000
+alpha = 0.0001
+beta = alpha*10
+
+load_improved = False
+please_save = True
+load_final = False
 new_architecture = False
-multiple_explore = False
+multiple_explore = True
 freeze_point = False
-allow_submit = False
+freeze_train_factor = 3
+allow_submit = True
+if load_improved is True:
+    assert allow_submit == load_improved
 reward_n = 1
 decay = False
 sparse_reward = True
-dueling_layer = False
+dueling_layer = True
 config = f"Config: fancy_arch:{new_architecture} \n freeze:{freeze_point} \n reward {reward_n} \n " \
          f"submit:{allow_submit} \n decay{decay} \n sparse:{sparse_reward} \n explore{multiple_explore}"
 config_string = re.sub("\n", "", config)
 config_string = re.sub(" ", "", config_string)
 config_string = re.sub(":", "_", config_string)
 
-max_global_steps = 10000
-alpha = 0.0001
-beta = alpha*10
+
 
 """Imports depending on config"""
 if sparse_reward is True:
@@ -78,14 +86,14 @@ layer1_size = 100
 layer2_size = 50
 layer3_size = 50
 steps_per_update = 5
-num_workers = 1#multiprocessing.cpu_count()
+num_workers = 1 #multiprocessing.cpu_count()
 global_counter = itertools.count()
 returns_list = []
 
 """More stuff dependant on config"""
 if freeze_point is True:
     global_counter2 = itertools.count()
-    max_global_steps2 = max_global_steps
+    max_global_steps2 = max_global_steps*freeze_train_factor
 
 if decay is True:
     param_decay = beta / max_global_steps
@@ -103,8 +111,12 @@ with tf.device('/CPU:0'):
                                                                     layer2_size=layer2_size).build_network()
     dqn_model, dqn_optimizer = DQN_Agent(alpha, n_discrete_actions, n_continuous_actions, state_shape, "DQN_model",
                                layer1_size, layer2_size, layer3_size).build_network()
-    #param_model = load_model("param_model.h5")
-    #dqn_model = load_model("dqn_model.h5")
+    if load_improved is True:
+        param_model = load_model("Nets/Agent_improved/param_model.h5")
+        dqn_model = load_model("Nets/Agent_improved/dqn_model.h5")
+    elif load_final is True:
+        param_model = load_model("Nets/Agent_final/param_model.h5")
+        dqn_model = load_model("Nets/Agent_final/dqn_model.h5")
     # Create Workers
     start_time = time.time()
     workers = []
@@ -147,7 +159,7 @@ with tf.device('/CPU:0'):
                 global_network_P=param_model,
                 global_network_dqn=dqn_model,
                 global_optimizer_P=param_optimizer,
-                global_optimizer_dqn=dqn_optimizer,
+                global_optimizer_dqn=RMSprop(lr=alpha, decay=dqn_decay),
                 global_counter=global_counter2,
                 env=Simulator(allow_submit=allow_submit, metric=reward_n),
                 max_global_steps=max_global_steps2,
@@ -185,6 +197,10 @@ if env.Performance_metric > plotter.by_lightness:
     ax1.imshow(BFD)
     ax1.axis("off")
     fig1.savefig(f"Data_Plots/{config_string}BFD.png", bbox_inches='tight')
+    if please_save is True:
+        param_model.save("Nets/Agent_final/param_model.h5")
+        dqn_model.save("Nets/Agent_final/dqn_model.h5")
+
 
 
 print(env.split_order)
@@ -193,7 +209,4 @@ print(env.Performance_metric)
 print(env.Performance_metric2)
 print(config)
 
-"""
-param_model.save("Nets/Agent_improved/param_model.h5")
-dqn_model.save("Nets/Agent_improved/dqn_model.h5")
-"""
+

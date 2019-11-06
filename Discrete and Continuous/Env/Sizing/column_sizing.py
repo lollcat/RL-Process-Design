@@ -21,7 +21,7 @@ def columnsize(N, volumetric_flow):
     velocity = 0.6  # m/s using Ludwig
 
     Area = volumetric_flow/velocity
-    Di = np.sqrt(Area*4)
+    Di = np.sqrt(Area*4/np.pi)
     Di *= 3.28
 
 

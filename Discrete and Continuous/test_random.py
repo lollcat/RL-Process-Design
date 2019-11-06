@@ -4,7 +4,7 @@ import numpy as np
 env = Simulator()
 reward_list1 = []
 reward_list2 = []
-for i in range(100000):
+for i in range(10000):
     env.reset()
     done = False
     score = 0

@@ -53,11 +53,7 @@ class Worker:
                 # Collect some experience
                 experience = self.run_n_steps()
                 # Update the global networks using local gradients
-                if self.freeze is False:
-                    self.update_global_parameters(experience)
-                else:
-                    self.update_global_parameters_freeze(experience)
-
+                self.update_global_parameters(experience)
                 # Stop once the max number of global steps has been reached
                 if self.max_global_steps is not None and self.global_step >= self.max_global_steps:
                     coord.request_stop()
@@ -84,7 +80,9 @@ class Worker:
         if self.multiple_explore is False:
             action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
         else:
-            if self.name % 2 == 0:
+            if self.name % 3 == 0:
+                action_discrete = self.diff_sep_explore(state, predict_discrete, current_step, stop_step)
+            elif self.name % 3 == 1:
                 action_discrete = self.eps_greedy_action(state, predict_discrete, current_step, stop_step)
             else:
                 action_discrete = self.proportion_action(state, predict_discrete, current_step, stop_step)
@@ -92,7 +90,7 @@ class Worker:
         action_continuous = action_continuous[0]  # take it back to the correct shape
         return action_continuous, action_discrete
 
-    def eps_greedy_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.05):
+    def eps_greedy_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.1):
         explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
         random = np.random.rand()
         illegal_actions = self.illegal_actions(state)
@@ -103,6 +101,26 @@ class Worker:
         else:
             action_discrete = np.argmax(predict_discrete)
 
+        return action_discrete
+
+    def diff_sep_explore(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.1):
+        explore_threshold = max(max_prob - current_step / stop_step * (max_prob - min_prob), min_prob)
+        random = np.random.rand()
+        illegal_actions = self.illegal_actions(state)
+        prev_LKs = self.env.sep_order
+        non_explore_actions = np.zeros((self.n_discrete_actions,), dtype=bool)
+        for i in range(len(prev_LKs)):
+            non_explore_actions[np.arange(self.n_discrete_actions) % 5 == prev_LKs[i]] = True
+        if self.allow_submit is True:
+            non_explore_actions[-1] = False
+        illegal_actions = illegal_actions + non_explore_actions
+
+        predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
+        if random < explore_threshold:
+            action_discrete = np.random.choice(
+                   [i for i in range(self.n_discrete_actions) if illegal_actions[i] == False])
+        else:
+            action_discrete = np.argmax(predict_discrete)
         return action_discrete
 
     def proportion_action(self, state, predict_discrete, current_step, stop_step, max_prob=1, min_prob=0.05):
@@ -177,6 +195,7 @@ class Worker:
                 state = step.state[np.newaxis, :]
                 action_continuous = step.action_continuous[np.newaxis, :]
                 action_discrete = step.action_discrete
+
 
                 if self.freeze is False:
                     gradient_param, gradient_dqn = self.get_gradient(state, target, action_continuous, action_discrete)

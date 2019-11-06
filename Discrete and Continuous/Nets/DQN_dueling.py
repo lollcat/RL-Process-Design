@@ -7,7 +7,7 @@ import tensorflow as tf
 
 class DQN_Agent:
     def __init__(self, lr, n_discrete_actions, n_continuous_actions, state_shape, name,
-                 layer1_size=64, layer2_size=32, layer3_size=32, decay=False):
+                 layer1_size=64, layer2_size=32, layer3_size=32, decay=False, optimizer_type=RMSprop):
         self.lr = lr
         self.n_discrete_actions = n_discrete_actions
         self.n_continuous_actions = n_continuous_actions
@@ -16,7 +16,7 @@ class DQN_Agent:
         self.layer2_size = layer2_size
         self.layer3_size = layer3_size
         self.state_shape = state_shape
-        self.optimizer_type = RMSprop
+        self.optimizer_type = optimizer_type
         self.decay = decay
         self.model = self.build_network()
 

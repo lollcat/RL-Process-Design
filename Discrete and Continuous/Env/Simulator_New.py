@@ -84,7 +84,7 @@ class Simulator:
 
         # get actions
         action_continuous, action_discrete = action
-        if action_discrete == self.discrete_action_size - 1:
+        if action_discrete == self.discrete_action_size - 1 and self.allow_submit is True:
             done = True
             print("end early")
             self.classify_streams()
@@ -98,6 +98,7 @@ class Simulator:
                 reward = max(self.Performance_metric2, -10)
 
             return self.state, reward, done, info
+
         Light_Key = action_discrete % self.split_option_n
         Selected_stream = int(action_discrete/self.split_option_n)
         LK_split = self.action_continuous_definer(action_continuous)
@@ -295,9 +296,10 @@ class Simulator:
             return state, reward, done, _
 
     def illegal_actions(self, state):
-        LK_legal1 = state[:, 0:-1] == 0
+        state = state[np.newaxis, :]
+        LK_legal1 = state[:, :, 0:-1] == 0
         LK_legal1 = LK_legal1.flatten(order="C")
-        LK_legal2 = state[:, 1:] == 0
+        LK_legal2 = state[:, :, 1:] == 0
         LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
         if self.allow_submit is True:

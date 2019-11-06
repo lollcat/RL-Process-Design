@@ -71,7 +71,7 @@ class Simulator:
 
         # get actions
         action_continuous, action_discrete = action
-        if action_discrete == self.discrete_action_size - 1:
+        if action_discrete == self.discrete_action_size - 1 and self.allow_submit is True:
             done = True
             print("end early")
             reward = 0

@@ -7,14 +7,15 @@ from tensorflow.keras.utils import plot_model
 
 
 class ParameterAgent:
-    def __init__(self, lr, n_continuous_actions, state_shape, name, layer1_size=64, layer2_size=32, decay=False):
+    def __init__(self, lr, n_continuous_actions, state_shape, name, layer1_size=64, layer2_size=32,
+                 decay=False, optimizer_type=RMSprop):
         self.lr = lr
         self.n_continuous_actions = n_continuous_actions
         self.name = name
         self.layer1_size = layer1_size
         self.layer2_size = layer2_size
         self.state_shape = state_shape
-        self.optimizer_type = RMSprop
+        self.optimizer_type = optimizer_type
         self.decay = decay
         self.model, self.optimizer = self.build_network()
 

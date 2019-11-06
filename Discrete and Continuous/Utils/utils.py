@@ -18,15 +18,15 @@ class Plotter:
         if episodes < 100:
             raise ValueError("Not enough episodes")
         if metric is 0:
-            self.by_random = -2.17717706
-            self.by_lightness = 9.49742234
-            self.by_flowrate = 9.05060581
-            self.by_volatility = 9.49492185
+            self.by_random = 0.49282674
+            self.by_lightness = 9.57710821
+            self.by_flowrate = 9.29304865
+            self.by_volatility = 9.57810267
         else:
-            self.by_random = 0.7266093129375468
-            self.by_lightness = 10.34636041
-            self.by_flowrate = 9.85960468
-            self.by_volatility = 10.34363645
+            self.by_random = 0.8182666909582774
+            self.by_lightness = 10.4331691
+            self.by_flowrate = 10.12371856
+            self.by_volatility = 10.43425249
 
     def running_mean(self, x, N):
         cumsum = np.cumsum(np.insert(x, 0, 0))
