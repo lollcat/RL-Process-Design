@@ -46,14 +46,14 @@ load_final = True
 new_architecture = True
 multiple_explore = True
 freeze_point = True
-freeze_train_factor = 3
+freeze_train_factor = 6
 allow_submit = False  # seems to make it harder
 
 reward_n = 1
 decay = True
 sparse_reward = True
 dueling_layer = True
-load_improved = False #doesn't seem to help
+load_improved = False  # doesn't seem to help
 config = f"Config: fancy_arch:{new_architecture} \n freeze:{freeze_point} \n reward {reward_n} \n " \
          f"submit:{allow_submit} \n decay{decay} \n sparse:{sparse_reward} \n explore{multiple_explore}"
 config_string = re.sub("\n", "", config)
@@ -116,8 +116,14 @@ with tf.device('/CPU:0'):
         param_model = load_model("Nets/Agent_improved/param_model.h5")
         dqn_model = load_model("Nets/Agent_improved/dqn_model.h5")
     elif load_final is True:
-        param_model = load_model("Nets/Agent_final/param_model.h5")
-        dqn_model = load_model("Nets/Agent_final/dqn_model.h5")
+        if new_architecture is True:
+            param_model = load_model("Nets/Agent_final/big_param_model.h5")
+            dqn_model = load_model("Nets/Agent_final/big_dqn_model.h5")
+        else:
+            param_model = load_model("Nets/Agent_final/param_model.h5")
+            dqn_model = load_model("Nets/Agent_final/dqn_model.h5")
+
+
     # Create Workers
     start_time = time.time()
     workers = []
@@ -199,9 +205,12 @@ if env.Performance_metric > plotter.by_lightness:
     ax1.axis("off")
     fig1.savefig(f"Data_Plots/{config_string}BFD.png", bbox_inches='tight')
     if please_save is True:
-        param_model.save("Nets/Agent_final/param_model.h5")
-        dqn_model.save("Nets/Agent_final/dqn_model.h5")
-
+        if new_architecture is True:
+            param_model.save("Nets/Agent_final/big_param_model.h5")
+            dqn_model.save("Nets/Agent_final/big_dqn_model.h5")
+        else:
+            param_model.save("Nets/Agent_final/param_model.h5")
+            dqn_model.save("Nets/Agent_final/dqn_model.h5")
 
 
 print(env.split_order)
