@@ -87,7 +87,7 @@ layer1_size = 100
 layer2_size = 50
 layer3_size = 50
 steps_per_update = 5
-num_workers = 1#multiprocessing.cpu_count()
+num_workers = multiprocessing.cpu_count()
 global_counter = itertools.count()
 returns_list = []
 
@@ -156,7 +156,7 @@ with tf.device('/CPU:0'):
                 global_network_P=param_model,
                 global_network_dqn=dqn_model,
                 global_optimizer_P=param_optimizer,
-                global_optimizer_dqn=dqn_optimizer,
+                global_optimizer_dqn=RMSprop(lr=alpha, decay=False),
                 global_counter=global_counter2,
                 env=Simulator(allow_submit=allow_submit, metric=reward_n),
                 max_global_steps=max_global_steps2,
