@@ -2,10 +2,12 @@ import numpy as np
 
 
 class Tester:
-    def __init__(self, param_model, dqn_model, env):
+    def __init__(self, param_model, dqn_model, env, product_all=False):
+        self.product_all = product_all
         self.param_model = param_model
         self.dqn_model = dqn_model
         self.env = env
+        self.n_discrete_actions = env.discrete_action_space.n
         self.allow_submit = env.allow_submit
 
     def test(self, render=False):
@@ -33,9 +35,17 @@ class Tester:
         LK_legal2 = state[:, :, 1:] == 0
         LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
-        if self.allow_submit is True:
+        if self.product_all is True:
+            non_explore_actions = np.zeros((self.n_discrete_actions,), dtype=bool)
+            prev_LKs = self.env.sep_order
+            for i in range(len(prev_LKs)):
+                non_explore_actions[np.arange(self.n_discrete_actions) % 5 == prev_LKs[i]] = True
+            LK_legal = LK_legal + non_explore_actions
+
+        elif self.allow_submit is True:
             if self.env.n_outlet_streams > 1:
-                LK_legal = np.append(LK_legal, False)
+               LK_legal = np.append(LK_legal, False)
             else:
                 LK_legal = np.append(LK_legal, True)
+
         return LK_legal

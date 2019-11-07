@@ -26,7 +26,7 @@ import multiprocessing
 import concurrent.futures
 import itertools
 from Nets.P_actor import ParameterAgent
-from Workers.Worker_constrained import Worker
+
 import time
 from Utils.tester import Tester
 from Utils.utils import Plotter, Visualiser
@@ -37,15 +37,19 @@ import re
 CONFIG
 """
 new_architecture = False
-multiple_explore = False
-freeze_point = False
+multiple_explore = True
+freeze_point = True
 allow_submit = False
-reward_n = 1
-decay = False
+reward_n = 0
+decay = True
 sparse_reward = True
-dueling_layer = False
+dueling_layer = True
+product_all = True
+if product_all is True:
+    assert product_all != allow_submit
+
 config = f"Config: fancy_arch:{new_architecture} \n freeze:{freeze_point} \n reward {reward_n} \n " \
-         f"submit:{allow_submit} \n decay{decay} \n sparse:{sparse_reward} \n explore{multiple_explore}"
+         f"submit:{allow_submit} \n decay{decay} \n sparse:{sparse_reward} \n explore{multiple_explore} \n constrain_product{product_all}"
 config_string = re.sub("\n", "", config)
 config_string = re.sub(" ", "", config_string)
 config_string = re.sub(":", "_", config_string)
@@ -60,12 +64,17 @@ if sparse_reward is True:
 else:
     from Env.Simulator_new_reward import Simulator
 
+if product_all is False:
+    from Workers.Worker_constrained import Worker
+else:
+    from Workers.Worker_constrained_6 import Worker
 if new_architecture is True:
     from Nets.DQN_dueling_new_structure import DQN_Agent
 elif dueling_layer is True and new_architecture:
     from Nets.DQN_dueling import DQN_Agent
 else:
     from Nets.DQN import DQN_Agent
+
 
 """
 OTHER INPUTS
@@ -168,7 +177,7 @@ with tf.device('/CPU:0'):
 
 
 for i in range(100):
-    env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n)).test()
+    env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n), product_all=product_all).test()
     if reward_n is 0:
         returns_list.append(env.Performance_metric)
     else:

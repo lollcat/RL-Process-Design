@@ -36,31 +36,32 @@ import re
 """
 CONFIG
 """
-max_global_steps = 60000
+max_global_steps = 15000
 alpha = 0.0001
 beta = alpha*10
 
-load_improved = False
+
 please_save = True
-load_final = False
-new_architecture = False
+load_final = True
+new_architecture = True
 multiple_explore = True
-freeze_point = False
+freeze_point = True
 freeze_train_factor = 3
-allow_submit = True
-if load_improved is True:
-    assert allow_submit == load_improved
+allow_submit = False  # seems to make it harder
+
 reward_n = 1
-decay = False
+decay = True
 sparse_reward = True
 dueling_layer = True
+load_improved = False #doesn't seem to help
 config = f"Config: fancy_arch:{new_architecture} \n freeze:{freeze_point} \n reward {reward_n} \n " \
          f"submit:{allow_submit} \n decay{decay} \n sparse:{sparse_reward} \n explore{multiple_explore}"
 config_string = re.sub("\n", "", config)
 config_string = re.sub(" ", "", config_string)
 config_string = re.sub(":", "_", config_string)
 
-
+if load_improved is True:
+    assert allow_submit == load_improved
 
 """Imports depending on config"""
 if sparse_reward is True:
@@ -86,7 +87,7 @@ layer1_size = 100
 layer2_size = 50
 layer3_size = 50
 steps_per_update = 5
-num_workers = 1 #multiprocessing.cpu_count()
+num_workers = multiprocessing.cpu_count()
 global_counter = itertools.count()
 returns_list = []
 
@@ -96,8 +97,8 @@ if freeze_point is True:
     max_global_steps2 = max_global_steps*freeze_train_factor
 
 if decay is True:
-    param_decay = beta / max_global_steps
-    dqn_decay = alpha / max_global_steps
+    param_decay = beta / max_global_steps * 8
+    dqn_decay = alpha / max_global_steps * 8
 else:
     param_decay = False
     dqn_decay = False
@@ -159,7 +160,7 @@ with tf.device('/CPU:0'):
                 global_network_P=param_model,
                 global_network_dqn=dqn_model,
                 global_optimizer_P=param_optimizer,
-                global_optimizer_dqn=RMSprop(lr=alpha, decay=dqn_decay),
+                global_optimizer_dqn=RMSprop(lr=alpha, decay=False),
                 global_counter=global_counter2,
                 env=Simulator(allow_submit=allow_submit, metric=reward_n),
                 max_global_steps=max_global_steps2,
