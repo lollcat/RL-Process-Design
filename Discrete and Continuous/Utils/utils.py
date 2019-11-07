@@ -1,16 +1,16 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from os import times
+import time
 from IPython.display import Image
 import pydot
 import imageio
 
 
 
-
 class Plotter:
-    def __init__(self, score_history, episodes, config_string, metric=0, freeze_point=False):
+    def __init__(self, score_history, episodes, config_string, metric=0, freeze_point=False, show_heuristics=True):
         self.config = config_string
+        self.show_heuristics = show_heuristics
         self.score_history = score_history
         self.episodes = episodes + 1
         self.metric = metric
@@ -38,26 +38,34 @@ class Plotter:
         smoothed_rews = self.running_mean(self.score_history, 100)
         plt.plot(episodes[-len(smoothed_rews):], smoothed_rews, color="blue")
         plt.plot(episodes, self.score_history, color='grey', alpha=0.3)
-        plt.plot([episodes[0], episodes[-1]], [self.by_flowrate, self.by_flowrate], alpha=0.3)
-        plt.plot([episodes[0], episodes[-1]], [self.by_volatility, self.by_volatility], alpha=0.6)
-        plt.plot([episodes[0], episodes[-1]], [self.by_lightness, self.by_lightness], alpha=0.6)
-        plt.plot([episodes[0], episodes[-1]], [self.by_random, self.by_random], alpha=0.6)
+        if self.show_heuristics is True:
+            plt.plot([episodes[0], episodes[-1]], [self.by_flowrate, self.by_flowrate], alpha=0.3)
+            plt.plot([episodes[0], episodes[-1]], [self.by_volatility, self.by_volatility], alpha=0.6)
+            plt.plot([episodes[0], episodes[-1]], [self.by_lightness, self.by_lightness], alpha=0.6)
+            plt.plot([episodes[0], episodes[-1]], [self.by_random, self.by_random], alpha=0.6)
         if freeze_point is not False or 0:
             plt.plot([freeze_point, freeze_point], [min(self.score_history), max(self.score_history)], "--", color="black")
         #plt.yscale("symlog")
         plt.xlabel("Episodes")
         plt.ylabel("Reward")
-        if freeze_point is False:
-            plt.legend(["Average Reward", "Reward", "Flowrate Heuristic", "Volatility heuristic",
-                        "Boiling Point Heuristic", "Random Average"])
+        if self.show_heuristics is True:
+            if freeze_point is False:
+                plt.legend(["Average Reward", "Reward", "Flowrate Heuristic", "Volatility heuristic",
+                                "Boiling Point Heuristic", "Random Average"])
+            else:
+                plt.legend(["Average Reward", "Reward", "Flowrate Heuristic", "Volatility Heuristic",
+                            "Boiling Point Heuristic", "Random Average", "Freeze Point"])
         else:
-            plt.legend(["Average Reward", "Reward", "Flowrate Heuristic", "Volatility Heuristic",
-                        "Boiling Point Heuristic", "Random Average", "Freeze Point"])
+            if freeze_point is False:
+                plt.legend(["Average Reward", "Reward"])
+            else:
+                plt.legend(["Average Reward", "Reward", "Freeze Point"])
+
         if save is True:
             if freeze_point is True:
-                plt.savefig(f"Data_Plots/{self.config}_learn_" + str(times().user) + ".png", bbox_inches='tight')
+                plt.savefig(f"Data_Plots/{self.config}_learn_" + str(time.time()) + ".png", bbox_inches='tight')
             else:
-                plt.savefig(f"Data_Plots/{self.config}_learn_" + str(times().user) + ".png", bbox_inches='tight')
+                plt.savefig(f"Data_Plots/{self.config}_learn_" + str(time.time()) + ".png", bbox_inches='tight')
         plt.show()
 
 class Visualiser:

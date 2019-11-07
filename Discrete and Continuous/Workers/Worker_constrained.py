@@ -21,7 +21,7 @@ class Step:  # Stores a step
 class Worker:
     def __init__(self, name, global_network_P, global_network_dqn, global_optimizer_P, global_optimizer_dqn,
                  global_counter, env, max_global_steps, returns_list, multiple_explore=False, freeze=False,
-                 n_steps=10, gamma=0.99):
+                 n_steps=10, gamma=1):
         self.name = name
         self.global_network_P = global_network_P
         self.global_network_dqn = global_network_dqn
