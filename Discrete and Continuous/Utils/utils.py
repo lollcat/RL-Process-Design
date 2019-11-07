@@ -42,7 +42,7 @@ class Plotter:
         plt.plot([episodes[0], episodes[-1]], [self.by_volatility, self.by_volatility], alpha=0.6)
         plt.plot([episodes[0], episodes[-1]], [self.by_lightness, self.by_lightness], alpha=0.6)
         plt.plot([episodes[0], episodes[-1]], [self.by_random, self.by_random], alpha=0.6)
-        if freeze_point is not False:
+        if freeze_point is not False or 0:
             plt.plot([freeze_point, freeze_point], [min(self.score_history), max(self.score_history)], "--", color="black")
         #plt.yscale("symlog")
         plt.xlabel("Episodes")

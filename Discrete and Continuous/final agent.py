@@ -39,14 +39,14 @@ CONFIG
 max_global_steps = 15000
 alpha = 0.0001
 beta = alpha*10
-
-
 please_save = True
-load_final = True
-new_architecture = True
+load_final = False
+new_architecture = False
+
 multiple_explore = True
 freeze_point = True
-freeze_train_factor = 6
+freeze_only = False
+freeze_train_factor = 3
 allow_submit = False  # seems to make it harder
 
 reward_n = 1
@@ -98,7 +98,7 @@ if freeze_point is True:
 
 if decay is True:
     param_decay = beta / max_global_steps * 8
-    dqn_decay = alpha / max_global_steps * 8
+    dqn_decay = alpha / max_global_steps2 * 8
 else:
     param_decay = False
     dqn_decay = False
@@ -125,33 +125,35 @@ with tf.device('/CPU:0'):
 
 
     # Create Workers
-    start_time = time.time()
-    workers = []
-    for worker_id in range(num_workers):
-        worker = Worker(
-            name=worker_id,
-            global_network_P=param_model,
-            global_network_dqn=dqn_model,
-            global_optimizer_P=param_optimizer,
-            global_optimizer_dqn=dqn_optimizer,
-            global_counter=global_counter,
-            env=Simulator(allow_submit=allow_submit, metric=reward_n),
-            max_global_steps=max_global_steps,
-            returns_list=returns_list,
-            multiple_explore=multiple_explore,
-            n_steps=steps_per_update)
-        workers.append(worker)
+    if freeze_only is False:
+        start_time = time.time()
+        workers = []
+        for worker_id in range(num_workers):
+            worker = Worker(
+                name=worker_id,
+                global_network_P=param_model,
+                global_network_dqn=dqn_model,
+                global_optimizer_P=param_optimizer,
+                global_optimizer_dqn=dqn_optimizer,
+                global_counter=global_counter,
+                env=Simulator(allow_submit=allow_submit, metric=reward_n),
+                max_global_steps=max_global_steps,
+                returns_list=returns_list,
+                multiple_explore=multiple_explore,
+                n_steps=steps_per_update)
+            workers.append(worker)
 
 
-    coord = tf.train.Coordinator()
-    worker_fn = lambda worker_: worker_.run(coord)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
-        executor.map(worker_fn, workers, timeout=10)
+        coord = tf.train.Coordinator()
+        worker_fn = lambda worker_: worker_.run(coord)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=num_workers) as executor:
+            executor.map(worker_fn, workers, timeout=10)
 
-    run_time = time.time() - start_time
-    print(f'runtime part 1 is {run_time/60} min')
+        run_time = time.time() - start_time
+        print(f'runtime part 1 is {run_time/60} min')
 
     if freeze_point is True:
+
         freeze_point = len(returns_list)
         """
         NOW DQN WITH PARAM NET FROZEN

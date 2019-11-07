@@ -36,25 +36,29 @@ import re
 """
 CONFIG
 """
+allow_submit = True
+reward_n = 0
+product_all = True
+decay = False
+normal_cost = False
+
 new_architecture = False
 multiple_explore = True
 freeze_point = True
-allow_submit = False
-reward_n = 0
-decay = True
 sparse_reward = True
 dueling_layer = True
-product_all = True
+
 if product_all is True:
     assert product_all != allow_submit
 
 config = f"Config: fancy_arch:{new_architecture} \n freeze:{freeze_point} \n reward {reward_n} \n " \
-         f"submit:{allow_submit} \n decay{decay} \n sparse:{sparse_reward} \n explore{multiple_explore} \n constrain_product{product_all}"
+         f"submit:{allow_submit} \n decay{decay} \n sparse:{sparse_reward} \n explore{multiple_explore} " \
+         f" \n constrain_product{product_all} \ndueling {dueling_layer} \n normal_cost {normal_cost }"
 config_string = re.sub("\n", "", config)
 config_string = re.sub(" ", "", config_string)
 config_string = re.sub(":", "_", config_string)
 
-max_global_steps = 10000
+max_global_steps = 20000
 alpha = 0.0001
 beta = alpha*10
 
@@ -79,14 +83,14 @@ else:
 """
 OTHER INPUTS
 """
-env = Simulator(allow_submit=allow_submit, metric=reward_n)
+env = Simulator(allow_submit=allow_submit, metric=reward_n, normal_cost=normal_cost)
 n_continuous_actions = env.continuous_action_space.shape[0]
 n_discrete_actions = env.discrete_action_space.n
 state_shape = env.observation_space.shape
 layer1_size = 100
 layer2_size = 50
 layer3_size = 50
-steps_per_update = 5
+steps_per_update = 3
 num_workers = multiprocessing.cpu_count()
 global_counter = itertools.count()
 returns_list = []
@@ -98,7 +102,7 @@ if freeze_point is True:
 
 if decay is True:
     param_decay = beta / max_global_steps
-    dqn_decay = alpha / max_global_steps
+    dqn_decay = alpha / max_global_steps2
 else:
     param_decay = False
     dqn_decay = False
@@ -125,7 +129,7 @@ with tf.device('/CPU:0'):
             global_optimizer_P=param_optimizer,
             global_optimizer_dqn=dqn_optimizer,
             global_counter=global_counter,
-            env=Simulator(allow_submit=allow_submit, metric=reward_n),
+            env=Simulator(allow_submit=allow_submit, metric=reward_n, normal_cost=normal_cost),
             max_global_steps=max_global_steps,
             returns_list=returns_list,
             multiple_explore=multiple_explore,
@@ -156,9 +160,9 @@ with tf.device('/CPU:0'):
                 global_network_P=param_model,
                 global_network_dqn=dqn_model,
                 global_optimizer_P=param_optimizer,
-                global_optimizer_dqn=RMSprop(lr=alpha, decay=False),
+                global_optimizer_dqn=RMSprop(lr=alpha*2, decay=False),
                 global_counter=global_counter2,
-                env=Simulator(allow_submit=allow_submit, metric=reward_n),
+                env=Simulator(allow_submit=allow_submit, metric=reward_n, normal_cost=normal_cost),
                 max_global_steps=max_global_steps2,
                 returns_list=returns_list,
                 multiple_explore=multiple_explore,
@@ -177,7 +181,8 @@ with tf.device('/CPU:0'):
 
 
 for i in range(100):
-    env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n), product_all=product_all).test()
+    env = Tester(param_model, dqn_model, Simulator(allow_submit=allow_submit, metric=reward_n,
+                                                   normal_cost=normal_cost), product_all=product_all).test()
     if reward_n is 0:
         returns_list.append(env.Performance_metric)
     else:
@@ -201,6 +206,11 @@ print(env.sep_order)
 print(env.Performance_metric)
 print(env.Performance_metric2)
 print(config)
+
+"""
+param_model.save("Nets/Agent_improved/param_model.h5")
+dqn_model.save("Nets/Agent_improved/dqn_model.h5")
+"""
 
 """
 param_model.save("Nets/Agent_improved/param_model.h5")

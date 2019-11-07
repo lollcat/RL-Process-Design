@@ -20,7 +20,7 @@ from Env.Sizing.dc_capital_cost import expensiveDC
 """
 
 class Simulator:
-    def __init__(self, metric=0, allow_submit=False):
+    def __init__(self, metric=0, allow_submit=False, normal_cost=True):
         self.allow_submit = allow_submit
         self.metric = metric
         # Compound Data
@@ -54,8 +54,10 @@ class Simulator:
         Molar_weights = np.array([30.07,  42.08,  44.097,  56.108,  58.124,  72.15])
         self.molar_density = density * Molar_weights
         Heating_value = np.array([51.9,   49.0,   50.4,    48.5,    49.4,    48.6])  # MJ/kg
-        Price_per_MBtu = np.array([2.54,  17.58,  4.27,    29.47,   5.31,    13.86])  # $/Million Btu
-        #Price_per_MBtu = np.array([2.54, 17.58, 0, 0, 5.31, 13.86])
+        if normal_cost is True:
+            Price_per_MBtu = np.array([2.54,  17.58,  4.27,    29.47,   5.31,    13.86])  # $/Million Btu
+        else:
+            Price_per_MBtu = np.array([2.54, 17.58, 0, 0, 5.31, 13.86])
 
         self.Antoine_a1 = np.array([6.95335, 7.01612, 7.01887, 7.0342,  7.00961, 7.00877])
         self.Antoine_a2 = np.array([699.106, 860.992, 889.864, 1013.6,  1022.48, 1134.15])
