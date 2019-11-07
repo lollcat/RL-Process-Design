@@ -20,7 +20,7 @@ from Env.Sizing.dc_capital_cost import expensiveDC
 """
 
 class Simulator:
-    def __init__(self, metric=0, allow_submit=False):
+    def __init__(self, metric=0, allow_submit=False, normal_cost=True):
         self.allow_submit = allow_submit
         self.metric = metric
         # Compound Data
@@ -54,8 +54,10 @@ class Simulator:
         Molar_weights = np.array([30.07,  42.08,  44.097,  56.108,  58.124,  72.15])
         self.molar_density = density * Molar_weights
         Heating_value = np.array([51.9,   49.0,   50.4,    48.5,    49.4,    48.6])  # MJ/kg
-        Price_per_MBtu = np.array([2.54,  17.58,  4.27,    29.47,   5.31,    13.86])  # $/Million Btu
-        #Price_per_MBtu = np.array([2.54, 17.58, 0, 0, 5.31, 13.86])
+        if normal_cost is True:
+            Price_per_MBtu = np.array([2.54,  17.58,  4.27,    29.47,   5.31,    13.86])  # $/Million Btu
+        else:
+            Price_per_MBtu = np.array([2.54, 17.58, 0, 0, 5.31, 13.86])
 
         self.Antoine_a1 = np.array([6.95335, 7.01612, 7.01887, 7.0342,  7.00961, 7.00877])
         self.Antoine_a2 = np.array([699.106, 860.992, 889.864, 1013.6,  1022.48, 1134.15])
@@ -84,7 +86,7 @@ class Simulator:
 
         # get actions
         action_continuous, action_discrete = action
-        if action_discrete == self.discrete_action_size - 1:
+        if action_discrete == self.discrete_action_size - 1 and self.allow_submit is True:
             done = True
             print("end early")
             self.classify_streams()
@@ -98,6 +100,7 @@ class Simulator:
                 reward = max(self.Performance_metric2, -10)
 
             return self.state, reward, done, info
+
         Light_Key = action_discrete % self.split_option_n
         Selected_stream = int(action_discrete/self.split_option_n)
         LK_split = self.action_continuous_definer(action_continuous)
@@ -276,7 +279,7 @@ class Simulator:
 
     def Kvalues_calculator(self, temperature, system_pressure):
         vapour_pressure = self.vapour_pressure_calculator(temperature)
-        Kvalues = vapour_pressure/ system_pressure
+        Kvalues = vapour_pressure / system_pressure
         return Kvalues
 
     def revenue_calculator(self, product_streams):
@@ -295,9 +298,10 @@ class Simulator:
             return state, reward, done, _
 
     def illegal_actions(self, state):
-        LK_legal1 = state[:, 0:-1] == 0
+        state = state[np.newaxis, :]
+        LK_legal1 = state[:, :, 0:-1] == 0
         LK_legal1 = LK_legal1.flatten(order="C")
-        LK_legal2 = state[:, 1:] == 0
+        LK_legal2 = state[:, :, 1:] == 0
         LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
         if self.allow_submit is True:

@@ -71,7 +71,7 @@ class Simulator:
 
         # get actions
         action_continuous, action_discrete = action
-        if action_discrete == self.discrete_action_size - 1:
+        if action_discrete == self.discrete_action_size - 1 and self.allow_submit is True:
             done = True
             print("end early")
             reward = 0
@@ -150,7 +150,7 @@ class Simulator:
 
         volumetric_flow = np.sum(tops/self.molar_density)
         Length, Diameter = columnsize(n_stages_actual, volumetric_flow)
-        capital_cost = expensiveDC(Diameter, Length, system_pressure, bots_temperature, n_stages_actual)
+        capital_cost = expensiveDC(Diameter, Length, system_pressure, bots_temperature, n_stages_actual)[0]
 
         if Length > 170 or Diameter > 17:  # limiting thresholds (would require custom column)
             capital_cost *= 10

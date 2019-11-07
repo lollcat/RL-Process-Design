@@ -114,7 +114,7 @@ class Worker:
         if self.allow_submit is True:
             non_explore_actions[-1] = False
         illegal_actions = illegal_actions + non_explore_actions
-        predict_discrete[:, illegal_actions] = predict_discrete.min() - 1  # TODO should rather use numpy mask
+        predict_discrete[:, illegal_actions] = predict_discrete.min() - 1
 
         if random < explore_threshold:
             action_discrete = np.random.choice(
@@ -143,11 +143,17 @@ class Worker:
         LK_legal2 = state[:, :, 1:] == 0
         LK_legal2 = LK_legal2.flatten(order="C")
         LK_legal = LK_legal1 + LK_legal2
+
+        non_explore_actions = np.zeros((self.n_discrete_actions,), dtype=bool)
+        prev_LKs = self.env.sep_order
+        for i in range(len(prev_LKs)):
+            non_explore_actions[np.arange(self.n_discrete_actions) % 5 == prev_LKs[i]] = True
         if self.allow_submit is True:
             if self.env.n_outlet_streams > 1:
                LK_legal = np.append(LK_legal, False)
             else:
                 LK_legal = np.append(LK_legal, True)
+        LK_legal = LK_legal + non_explore_actions
         return LK_legal
 
 

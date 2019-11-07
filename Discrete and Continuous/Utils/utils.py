@@ -4,31 +4,36 @@ from os import times
 from IPython.display import Image
 import pydot
 import imageio
-import string
+
+
+
 
 class Plotter:
-    def __init__(self, score_history, episodes, metric=0):
+    def __init__(self, score_history, episodes, config_string, metric=0, freeze_point=False):
+        self.config = config_string
         self.score_history = score_history
         self.episodes = episodes + 1
         self.metric = metric
+        self.freeze_point = freeze_point
         if episodes < 100:
             raise ValueError("Not enough episodes")
         if metric is 0:
-            self.by_random = -2.17717706
-            self.by_lightness = 9.49742234
-            self.by_flowrate = 9.05060581
-            self.by_volatility = 9.49492185
+            self.by_random = 0.49282674
+            self.by_lightness = 9.57710821
+            self.by_flowrate = 9.29304865
+            self.by_volatility = 9.57810267
         else:
-            self.by_random = 0.7266093129375468
-            self.by_lightness = 10.34636041
-            self.by_flowrate = 9.85960468
-            self.by_volatility = 10.34363645
+            self.by_random = 0.8182666909582774
+            self.by_lightness = 10.4331691
+            self.by_flowrate = 10.12371856
+            self.by_volatility = 10.43425249
 
     def running_mean(self, x, N):
         cumsum = np.cumsum(np.insert(x, 0, 0))
         return (cumsum[N:] - cumsum[:-N]) / N
 
-    def plot(self, save=False, freeze_point=False):
+    def plot(self, save=False):
+        freeze_point = self.freeze_point
         episodes = np.arange(self.episodes)
         smoothed_rews = self.running_mean(self.score_history, 100)
         plt.plot(episodes[-len(smoothed_rews):], smoothed_rews, color="blue")
@@ -37,7 +42,7 @@ class Plotter:
         plt.plot([episodes[0], episodes[-1]], [self.by_volatility, self.by_volatility], alpha=0.6)
         plt.plot([episodes[0], episodes[-1]], [self.by_lightness, self.by_lightness], alpha=0.6)
         plt.plot([episodes[0], episodes[-1]], [self.by_random, self.by_random], alpha=0.6)
-        if freeze_point is not False:
+        if freeze_point is not False or 0:
             plt.plot([freeze_point, freeze_point], [min(self.score_history), max(self.score_history)], "--", color="black")
         #plt.yscale("symlog")
         plt.xlabel("Episodes")
@@ -50,9 +55,9 @@ class Plotter:
                         "Boiling Point Heuristic", "Random Average", "Freeze Point"])
         if save is True:
             if freeze_point is True:
-                plt.savefig(f"Data_Plots/With_freeze/reward{self.metric}/RewardvsSteps_" + str(times().user) + ".png", bbox_inches='tight')
+                plt.savefig(f"Data_Plots/{self.config}_learn_" + str(times().user) + ".png", bbox_inches='tight')
             else:
-                plt.savefig("Data_Plots/main/reward{self.metric}/RewardvsSteps_" + str(times().user) + ".png", bbox_inches='tight')
+                plt.savefig(f"Data_Plots/{self.config}_learn_" + str(times().user) + ".png", bbox_inches='tight')
         plt.show()
 
 class Visualiser:

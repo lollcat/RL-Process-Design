@@ -26,3 +26,5 @@ Discrete and Continuous/Asynch full state/rewards.csv
 Discrete and Continuous/.ipynb_checkpoints/Heuristic_Design-checkpoint.ipynb
 *.db
 Discrete and Continuous/.ipynb_checkpoints/Untitled-checkpoint.ipynb
+Discrete and Continuous/Data_Plots/main/reward0/rewards.csv
+*.csv
