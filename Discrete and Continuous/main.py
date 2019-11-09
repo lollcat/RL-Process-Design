@@ -35,16 +35,16 @@ import re
 """
 CONFIG
 """
-allow_submit = True
-reward_n = 1
-product_all = False
+allow_submit = False
+reward_n = 0
+product_all = True
 decay = False
 normal_cost = True
 
 new_architecture = False
 multiple_explore = True
 freeze_point = True
-freeze_train_factor = 2
+freeze_train_factor = 1
 sparse_reward = True
 dueling_layer = True
 
@@ -189,7 +189,8 @@ for i in range(100):
         returns_list.append(env.Performance_metric2)
 
 
-plotter = Plotter(returns_list, len(returns_list) - 1, config_string, metric=reward_n, freeze_point=freeze_point)
+plotter = Plotter(returns_list, len(returns_list) - 1, config_string, metric=reward_n,
+                  freeze_point=freeze_point, show_heuristics=normal_cost)
 if env.Performance_metric > plotter.by_lightness:
     matplotlib.rcParams['figure.dpi'] = 800
     plotter.plot(save=True)
