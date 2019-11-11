@@ -58,7 +58,7 @@ config_string = re.sub("\n", "", config)
 config_string = re.sub(" ", "", config_string)
 config_string = re.sub(":", "_", config_string)
 
-max_global_steps = 20000
+max_global_steps = 400
 alpha = 0.0001
 beta = alpha*10
 steps_per_update = 5

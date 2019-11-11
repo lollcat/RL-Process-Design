@@ -72,14 +72,15 @@ class Visualiser:
     def __init__(self, env):
         self.env = env
 
-    def visualise(self, show_feed=True):
+    def visualise(self, show_all=True):
+        space = " "
         env = self.env
         G = pydot.Dot(graph_type="digraph", rankdir="LR")
         outlet_nodes = []
         nodes = []
         edges = []
         image_list = []
-        if show_feed is True:
+        if show_all is True:
             feed_string = "".join([f"{env.compound_names[i]} {round(env.feed[i])} kmol/h\n"
                                             for i in range(env.feed.shape[0])])
         else:
@@ -90,8 +91,9 @@ class Visualiser:
             LK = env.sep_order[i]
             split = round(env.split_order[i][0]*100, 1)
             n_trays = int(env.column_dimensions[i][0])
-            nodes.append(pydot.Node(f'Column {i + 1} \nLK is {LK} \nsplit is {split}% \nntrays is {n_trays}',
-                                    shape="square"))
+            capital_cost = round(env.capital_cost[i][0]/1e6, 1)
+            label = f'Column {i + 1} \nLK {LK} \nsplit {split}% \nntrays {n_trays} \ncapital cost R{capital_cost} M'
+            nodes.append(pydot.Node(label, shape="square"))
             G.add_node(nodes[i])
             if i > 0:
                 stream_in = env.column_streams[i][0]
@@ -107,11 +109,23 @@ class Visualiser:
             if tops in env.state_streams:
                 stream = env.stream_table[tops]
                 flowrate = int(stream.sum()+0.5)
-                purity = int(100 * stream.max() / stream.sum())
+                purity = round((100 * stream.max() / stream.sum()), 1)
                 compound = stream.argmax()
                 compound = env.compound_names[compound]
+                revenue = round(stream.max() * env.product_prices[np.argmax(stream)] * 8000/1e6, 1)  # TODO fix this silly workaround
+                if show_all is False:
+                    label = f"{flowrate} kmol/h \n{purity}% {compound}"
+                else:
+                    if purity >= 96 and stream.max() > 1:
+                        product_classification = f"Product{i*space}\n Revenue R{revenue} M \n Purity {purity}% \n"
+                    else:
+                        product_classification = f"Non-Product{i*space}\n"
+                    label = product_classification + "".join(
+                        [f"{env.compound_names[i]} {round(stream[i] + 0.05, 1)} kmol/h\n"
+                         for i in range(env.feed.shape[0])])  # if stream[i] > 0.05])
+
                 outlet_nodes.append(
-                    pydot.Node(f"Tops Column {i+1} \n {flowrate} kmol/h \n{purity}% {compound}", shape="box", color="white"))
+                    pydot.Node(label, shape="box", color="white"))
                 G.add_node(outlet_nodes[-1])
                 G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], label=int(tops+1), headport="w", tailport="ne"))
 
@@ -121,8 +135,19 @@ class Visualiser:
                 purity = round((100 * stream.max() / stream.sum()), 1)
                 compound = stream.argmax()
                 compound = env.compound_names[compound]
-                outlet_nodes.append(pydot.Node(f"Bottoms Column {i+1} \n {flowrate} kmol/h \n{purity}% {compound}",
-                                               shape="box", color="white"))
+                revenue = round(stream.max() * env.product_prices[np.argmax(stream)] * 8000/1e6, 1)  # TODO fix this silly workaround
+                if show_all is False:
+                    label = f"{flowrate} kmol/h \n{purity}% {compound}"
+                else:
+                    if purity >= 96 and stream.max() > 1:
+                        product_classification = f"Product{i*space} \n Revenue R{revenue} M \n Purity {purity}% \n"
+                    else:
+                        product_classification = f"Non-Product{i*space} \n"
+                    label = product_classification + "".join(
+                        [f"{env.compound_names[i]} {round(stream[i] + 0.05, 1)} kmol/h\n"
+                         for i in range(env.feed.shape[0])])  # if stream[i] > 0.05])
+
+                outlet_nodes.append(pydot.Node(label, shape="box", color="white"))
                 G.add_node(outlet_nodes[-1])
                 G.add_edge(pydot.Edge(nodes[i], outlet_nodes[-1], label=int(bottoms+1), headport="w", tailport="se"))
         BFD = imageio.imread(G.create_png())
