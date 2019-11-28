@@ -5,3 +5,19 @@
 ## See Report pdf for details
 
 DOI: 10.5281/zenodo.3556549
+
+To cite this thesis please use:
+@misc{laurence_midgley_2019_3556549,
+  author       = {Laurence Midgley and
+                  Michael Thomson},
+  title        = {{Reinforcement learning for chemical engineering 
+                   process synthesis}},
+  month        = nov,
+  year         = 2019,
+  note         = {{Final year undergraduate chemical engineering 
+                   thesis}},
+  publisher    = {Zenodo},
+  version      = {v1.0},
+  doi          = {10.5281/zenodo.3556549},
+  url          = {https://doi.org/10.5281/zenodo.3556549}
+}
