@@ -7,6 +7,7 @@
 DOI: 10.5281/zenodo.3556549
 
 To cite this thesis please use:
+
 @misc{laurence_midgley_2019_3556549,
   author       = {Laurence Midgley and
                   Michael Thomson},
