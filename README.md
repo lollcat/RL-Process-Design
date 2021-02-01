@@ -4,6 +4,10 @@
 
 ## See Report pdf for details
 
+A good starting point to get a basic idea of RL for process synthesis is the jupyter notebook https://github.com/lollcat/RL-Process-Design/blob/master/Discrete/PFR%20or%20CSTR/Agent.ipynb, which gives a simple illistrative example (read notebook in conjunction with PDF report). 
+
+
+
 DOI: 10.5281/zenodo.3556549
 
 To cite this thesis please use:
