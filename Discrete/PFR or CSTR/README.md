@@ -1,9 +1,2 @@
-Please see the list of package requirements to run Agent.ipynb
-
-The dependencies are a bit tricky - the key sequence of commands to get them right are:
-
-```
-pip install tensorflow=1.14
-pip install keras=2.3.1
-pip install keras-rl
-```
+The main file here is "PFRorCSTR"
+There is a google Colab at https://colab.research.google.com/drive/1961Md6-7qUhWGBpr8LB7Q9xovD-UzKqw?usp=sharing that run's this example!
