@@ -4,6 +4,6 @@ The dependencies are a bit tricky - the key sequence of commands to get them rig
 
 ```
 pip install tensorflow=1.14
-conda install keras
+pip install keras=2.3.1
 pip install keras-rl
 ```
