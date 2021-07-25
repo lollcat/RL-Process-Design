@@ -4,7 +4,7 @@
 
 ## See Report pdf for details
 
-A good starting point to get a basic idea of RL for process synthesis is colab given at https://colab.research.google.com/drive/1961Md6-7qUhWGBpr8LB7Q9xovD-UzKqw?usp=sharing, which gives a simple illistrative example.
+A good starting point to get a basic idea of RL for process synthesis is colab given at https://colab.research.google.com/drive/1j2BO2oKX9TbznpRKYBwIriB_Xbud8aEq?usp=sharing, which gives a simple illistrative example.
 
 
 
