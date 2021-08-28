@@ -61,7 +61,7 @@ class simulator(Env):
     def equation_solver(self, r_type, X_prev, a=-10, b=10, c=2):
         Vol = self.volume
         X_new = X_prev
-        #see PPT for equations
+        # see page 13 of report
         if r_type == 0: # CSTR
             A = a
             B = b - a*X_prev
