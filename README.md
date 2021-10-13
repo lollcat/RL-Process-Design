@@ -11,16 +11,20 @@ A good starting point to get a basic idea of RL for process synthesis is provide
 
 This thesis demonstrated, for the first time, that reinforcement learning (RL) can be applied to chemical engineering process synthesis (sequencing and design of unit operations to generate a process flowsheet). 
 Two case studies were used, with simple toy process synthesis problems for the proof of concept.
+
+
 The first case study was a toy reactors-in-series sequencing problem with only two actions (“PFR” or “CSTR”) and a known solution. 
 The RL agent applied deep-Q learning, which is a simple well-known variant of RL. 
 The agent was able to find the optimal configuration of reactors. 
 The application of high level RL coding libraries, together with the development of visualisation tools in this case study makes the example accessible to chemical engineers without advanced knowledge of RL.
+
 The second case study was a toy distillation column (DC) train synthesis problem.
 Solving this was more complex due to the branching structure of the DC train and the hybrid action space containing both discrete and continuous actions. Consequently, this case study began to approach the open-ended domains in which RL may have an advantage over conventional approaches.
 
 
 In this case study, a P-DQN agent that could produce both discrete and continuous actions was used. 
 The agent was able to learn and outperform multiple heuristic designs, often creating unexpected configurations for the DC trains. These counterintuitive results are an indicator of the potential for RL to generate novel process designs that would not necessarily be found by conventional methods.
+
 In an exploration of further developments within RL’s application to process synthesis:
 (1) We compared RL and conventional process synthesis techniques. 
 RL has the potential to be superior due to its ability to learn and generalise within open-ended problems, while taking advantage of computers’ ability to analyse large amounts of data and rapidly interact with simulations. 
@@ -51,3 +55,6 @@ This thesis hopes to stimulate research within this area – with the long-term 
   doi          = {10.5281/zenodo.3556549},
   url          = {https://doi.org/10.5281/zenodo.3556549}
 }
+
+## Further Notes
+I have extended this work further in "Distillation Gym" see [code repository](https://github.com/lollcat/DistillationTrain-Gym) and [paper](https://arxiv.org/abs/2009.13265). Feel free to email me at laurence.midgley@gmail.com if you are interested! 
