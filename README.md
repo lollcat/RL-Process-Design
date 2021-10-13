@@ -4,7 +4,7 @@
 
 ## See [Report](https://github.com/lollcat/RL-Process-Design/blob/master/Thesis%20Report.%20RL%20for%20Process%20Synthesis.pdf) for details
 
-A good starting point to get a basic idea of RL for process synthesis is provided in [this colab notebook](https://colab.research.google.com/github/lollcat/RL-Process-Design/blob/master/Discrete/PFR%20or%20CSTR/PFR_or_CSTR.ipynb). In this example we look at a simple problem where an RL agent designs a sequence of reactors through making the binary decision of choosing to add a PFR or CSTR (of fixed volume and conditions) to the "current" process stream (which is either the starting stream, or the stream coming out of the previous reactor). The full specification for this problem is provided in the [report](https://github.com/lollcat/RL-Process-Design/blob/master/Thesis%20Report.%20RL%20for%20Process%20Synthesis.pdf).
+A good starting point to get a basic idea of RL for process synthesis is provided in [this colab notebook](https://colab.research.google.com/github/lollcat/RL-Process-Design/blob/master/Discrete/PFR%20or%20CSTR/PFR_or_CSTR.ipynb). In this example we look at a simple problem where an RL agent designs a sequence of reactors through making the binary decision of choosing to add a PFR or CSTR (of fixed volume and conditions) to the "current" process stream (which is either the starting stream, or the stream coming out of the previous reactor). The full specification for this problem is provided in our [report](https://github.com/lollcat/RL-Process-Design/blob/master/Thesis%20Report.%20RL%20for%20Process%20Synthesis.pdf).
 
 
 ## Abstract
