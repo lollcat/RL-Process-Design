@@ -53,7 +53,7 @@ This thesis hopes to stimulate research within this area – with the long-term 
   publisher    = {Zenodo},
   version      = {v1.0},
   doi          = {10.5281/zenodo.3556549},
-  url          = {https://doi.org/10.5281/zenodo.3556549}
+  url          = { https://doi.org/10.5281/zenodo.3556549 }
 }
 
 ## Further Notes
